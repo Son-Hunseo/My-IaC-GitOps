@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-systems
+  annotations:
+    # Actions Runner Controller operator 전용 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners
+  annotations:
+    # GitHub Actions self-hosted runner Pod 전용 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  annotations:
+    # Prometheus와 Grafana를 함께 배치합니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  annotations:
+    # cert-manager CRD 설치 전에 네임스페이스를 먼저 만듭니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  annotations:
+    # External Secrets Operator 전용 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  annotations:
+    # MetalLB controller와 speaker가 사용하는 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nginx-gateway
+  annotations:
+    # NGINX Gateway Fabric 전용 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault
+  annotations:
+    # Vault 서버와 injector를 분리된 네임스페이스에 배치합니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: harbor
+  annotations:
+    # Harbor registry 구성요소 전용 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"

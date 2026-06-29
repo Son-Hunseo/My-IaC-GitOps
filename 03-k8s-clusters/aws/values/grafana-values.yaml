@@ -1,0 +1,24 @@
+# AWS EKS에서는 Grafana를 ClusterIP로 두고 Internal Gateway HTTPRoute로 노출합니다.
+service:
+  type: ClusterIP
+  port: 80
+
+admin:
+  existingSecret: ""
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+deploymentStrategy:
+  type: Recreate
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        isDefault: true

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onprem-platform
+  namespace: argocd
+  annotations:
+    # 이 root Application은 On-Premise overlay 전체를 동기화합니다.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+    targetRevision: main
+    path: 03-k8s-clusters/onprem/overlays
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      # child Application이 설치하는 CRD를 후속 리소스가 참조할 수 있으므로 dry-run 누락을 허용합니다.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

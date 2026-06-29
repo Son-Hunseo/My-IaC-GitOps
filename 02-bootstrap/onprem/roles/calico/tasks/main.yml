@@ -1,0 +1,58 @@
+---
+- name: Install Calico CRDs
+  ansible.builtin.command: kubectl apply --server-side --force-conflicts -f {{ calico_crd_manifest_url }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_crds_result
+  changed_when: "'created' in calico_crds_result.stdout or 'configured' in calico_crds_result.stdout or 'serverside-applied' in calico_crds_result.stdout"
+
+- name: Install Tigera operator
+  ansible.builtin.command: kubectl apply -f {{ calico_operator_manifest_url }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_operator_result
+  changed_when: "'created' in calico_operator_result.stdout or 'configured' in calico_operator_result.stdout"
+
+- name: Wait for Tigera operator rollout
+  ansible.builtin.command: kubectl -n tigera-operator rollout status deployment/tigera-operator --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Wait for Calico operator CRDs
+  ansible.builtin.command: kubectl wait --for condition=Established crd/installations.operator.tigera.io crd/apiservers.operator.tigera.io --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  changed_when: false
+
+- name: Render Calico custom resources
+  ansible.builtin.template:
+    src: calico-custom-resources.yml.j2
+    dest: /root/calico-custom-resources.yml
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Apply Calico custom resources
+  ansible.builtin.command: kubectl apply -f /root/calico-custom-resources.yml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_custom_resources_result
+  changed_when: "'created' in calico_custom_resources_result.stdout or 'configured' in calico_custom_resources_result.stdout"
+
+- name: Wait for Calico system namespace
+  ansible.builtin.command: kubectl get namespace calico-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_namespace_result
+  changed_when: false
+  retries: 60
+  delay: 5
+  until: calico_namespace_result.rc == 0
+
+- name: Wait for Calico daemonset rollout
+  ansible.builtin.command: kubectl -n calico-system rollout status daemonset/calico-node --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_rollout_result
+  changed_when: false

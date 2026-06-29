@@ -1,0 +1,47 @@
+---
+# Kubernetes 클러스터 설치와 kubeadm 초기화에 사용하는 변수입니다.
+
+# 설치할 Kubernetes minor 버전입니다. pkgs.k8s.io 저장소 경로에도 사용됩니다.
+kubernetes_version: "1.31"
+
+# 특정 패치 버전으로 고정해야 할 때 사용합니다.
+# 예: "1.31.8-1.1"
+# 빈 문자열이면 저장소에서 제공하는 해당 minor 최신 패키지를 설치합니다.
+kubernetes_patch_version: ""
+
+# kubeadm init에서 사용할 Pod CIDR입니다. CNI 선택에 맞게 조정하세요.
+kubernetes_pod_subnet: "10.244.0.0/16"
+
+# kubeadm init에서 사용할 Service CIDR입니다.
+kubernetes_service_subnet: "10.96.0.0/12"
+
+# worker가 접근할 API 서버 엔드포인트입니다.
+# 기본값은 첫 번째 control plane 노드의 ansible_host와 6443 포트입니다.
+kubernetes_api_endpoint: "{{ hostvars[groups['kube_control_plane'][0]].ansible_host }}:6443"
+
+# kubeadm init에 전달할 control plane advertise address입니다.
+kubernetes_advertise_address: "{{ hostvars[inventory_hostname].ansible_host }}"
+
+# kubelet cgroup driver와 맞춘 containerd SystemdCgroup 설정입니다.
+containerd_systemd_cgroup: true
+
+# Kubernetes 1.31 계열에서 사용할 pause image입니다.
+containerd_sandbox_image: "registry.k8s.io/pause:3.10"
+
+# Calico operator manifests.
+calico_version: "v3.32.0"
+calico_crd_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/v1_crd_projectcalico_org.yaml"
+calico_operator_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+
+# kubeconfig를 복사할 일반 사용자입니다.
+kubernetes_admin_user: "{{ ansible_user | default('ubuntu') }}"
+
+# Argo CD를 설치할 네임스페이스와 manifest 버전입니다.
+argocd_namespace: "argocd"
+argocd_version: "v2.14.9"
+# 테스트용 Internal Gateway는 HTTP만 열기 때문에 Argo CD의 HTTPS 리다이렉트를 끕니다.
+argocd_server_insecure: true
+
+# kubeadm control plane의 관리자 kubeconfig를 사용해 Argo CD를 설치합니다.
+argocd_kubeconfig: "/etc/kubernetes/admin.conf"
+argocd_kube_context: ""

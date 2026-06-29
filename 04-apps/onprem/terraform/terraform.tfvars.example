@@ -1,0 +1,54 @@
+# 한국어 주석: 실제 Harbor/Vault password와 앱 secret 값은 ignore되는 terraform.tfvars에만 넣으십시오.
+
+harbor_url      = "https://harbor.onprem.arpa"
+harbor_username = "admin"
+harbor_password = "replace-me"
+harbor_insecure = true
+
+vault_address         = "https://vault.onprem.arpa"
+vault_token           = "replace-me"
+vault_skip_tls_verify = true
+vault_kv_mount        = "secret"
+
+harbor_host = "harbor.onprem.arpa"
+
+precreated_robot_account_name   = "robot$shared"
+precreated_robot_account_secret = "replace-me-precreated-robot-token"
+
+apps = {
+  example = {
+    harbor_project = "son"
+
+    harbor_repositories = {
+      api = {
+        name = "example-api"
+      }
+      worker = {
+        name = "example-worker"
+      }
+    }
+
+    harbor_pull_secrets = {
+      default = {
+        path = "platform/harbor/example"
+      }
+    }
+
+    app_secrets = {
+      app = {
+        path = "apps/example/app"
+        values = {
+          DATABASE_URL   = "postgres://user:password@postgres.example.svc:5432/example"
+          SESSION_SECRET = "replace-me"
+        }
+      }
+      oauth = {
+        path = "apps/example/oauth"
+        values = {
+          OAUTH_CLIENT_ID     = "replace-me"
+          OAUTH_CLIENT_SECRET = "replace-me"
+        }
+      }
+    }
+  }
+}

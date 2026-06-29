@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gateway-class.yaml
+  - load-balancer-configuration.yaml
+  - gateway.yaml
+  - routes-argocd.yaml
+  - routes-monitoring.yaml

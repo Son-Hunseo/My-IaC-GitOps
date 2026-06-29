@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onprem-internal-gateway
+  namespace: argocd
+  annotations:
+    # Gateway API CRD, NGINX Gateway Fabric, MetalLB가 준비된 뒤 내부 라우팅 리소스를 적용합니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+    targetRevision: main
+    path: 03-k8s-clusters/onprem/overlays/internal-gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nginx-gateway
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

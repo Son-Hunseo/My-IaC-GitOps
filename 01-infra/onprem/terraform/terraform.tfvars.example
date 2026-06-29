@@ -1,0 +1,49 @@
+# 한국어 주석: 이 파일은 커밋 가능한 예시입니다. 실제 토큰, 비밀번호, 개인키는 절대 저장하지 마십시오.
+
+proxmox_endpoint         = "https://proxmox.example.local:8006/"
+proxmox_api_token_id     = "terraform@pve!gitops"
+proxmox_api_token_secret = "REPLACE_WITH_SECRET"
+proxmox_insecure         = false
+
+proxmox_node_name      = "pve01"
+vm_template_id         = 9000
+vm_template_node_name  = "pve01"
+vm_id_start            = 3000
+vm_name_prefix         = "gitops-k8s"
+datastore_id           = "local-lvm"
+cloud_init_datastore_id = "local-lvm"
+
+network_bridge  = "vmbr0"
+network_vlan_id = null
+gateway_ipv4    = "192.168.10.1"
+dns_servers     = ["192.168.10.1", "1.1.1.1"]
+
+cloud_init_username = "ubuntu"
+ssh_public_keys = [
+  "ssh-ed25519 REPLACE_WITH_PUBLIC_KEY_ONLY gitops-admin@example",
+]
+
+vm_nodes = {
+  master-01 = {
+    role       = "master"
+    ip_address = "192.168.10.11/24"
+    cores      = 4
+    memory_mb  = 8192
+    disk_gb    = 128
+  }
+  worker-01 = {
+    role       = "worker"
+    ip_address = "192.168.10.21/24"
+    cores      = 2
+    memory_mb  = 4096
+    disk_gb    = 128
+  }
+  worker-02 = {
+    role       = "worker"
+    ip_address = "192.168.10.22/24"
+    cores      = 2
+    memory_mb  = 4096
+    disk_gb    = 128
+  }
+}
+

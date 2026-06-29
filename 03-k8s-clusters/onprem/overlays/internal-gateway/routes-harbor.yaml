@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor
+  namespace: harbor
+  annotations:
+    # Harbor chart의 nginx Service로 UI와 API 트래픽을 전달합니다.
+    # Registry push/pull 경로는 운영 TLS와 hostname 정책을 별도로 검증합니다.
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  parentRefs:
+    - name: internal
+      namespace: nginx-gateway
+      sectionName: https
+  hostnames:
+    - harbor.onprem.arpa
+  rules:
+    - backendRefs:
+        - name: harbor
+          port: 80

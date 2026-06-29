@@ -1,0 +1,68 @@
+---
+# Argo CD 네임스페이스를 생성합니다. 이미 있으면 변경하지 않습니다.
+- name: Ensure Argo CD namespace exists
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} create namespace {{ argocd_namespace }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  register: argocd_namespace_create
+  changed_when: argocd_namespace_create.rc == 0
+  failed_when: argocd_namespace_create.rc != 0 and 'AlreadyExists' not in argocd_namespace_create.stderr
+
+# 지정한 Argo CD 버전의 공식 설치 manifest를 적용합니다.
+- name: Apply Argo CD install manifest
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  register: argocd_apply_result
+  changed_when: "'created' in argocd_apply_result.stdout or 'configured' in argocd_apply_result.stdout"
+
+# 테스트용 HTTP Gateway 뒤에서 Argo CD가 HTTPS로 리다이렉트하지 않도록 현재 설정을 확인합니다.
+- name: Read Argo CD command parameter ConfigMap
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} get configmap argocd-cmd-params-cm -o json"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  register: argocd_cmd_params_cm
+  changed_when: false
+  when: argocd_server_insecure | bool
+
+# argocd-server는 ConfigMap 값을 환경변수로 읽으므로 변경 시 rollout restart가 필요합니다.
+- name: Enable insecure Argo CD server mode for HTTP Gateway testing
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} patch configmap argocd-cmd-params-cm --type merge -p '{\"data\":{\"server.insecure\":\"true\"}}'"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  register: argocd_insecure_patch
+  changed_when: true
+  when:
+    - argocd_server_insecure | bool
+    - ((argocd_cmd_params_cm.stdout | from_json).data['server.insecure'] | default('false')) != 'true'
+
+- name: Restart Argo CD server after insecure mode change
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} rollout restart deployment/argocd-server"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  register: argocd_server_restart
+  changed_when: "'restarted' in argocd_server_restart.stdout"
+  when:
+    - argocd_server_insecure | bool
+    - argocd_insecure_patch is changed
+
+# API 서버와 컨트롤러가 사용할 핵심 워크로드가 준비될 때까지 기다립니다.
+- name: Wait for Argo CD server rollout
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} rollout status deployment/argocd-server --timeout={{ argocd_rollout_timeout }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  changed_when: false
+
+# Application controller StatefulSet 준비 상태를 확인합니다.
+- name: Wait for Argo CD application controller rollout
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} rollout status statefulset/argocd-application-controller --timeout={{ argocd_rollout_timeout }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  changed_when: false
+
+# repo-server 배포 상태를 확인합니다.
+- name: Wait for Argo CD repo server rollout
+  ansible.builtin.command: "{{ argocd_kubectl_base_command }} -n {{ argocd_namespace }} rollout status deployment/argocd-repo-server --timeout={{ argocd_rollout_timeout }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  changed_when: false

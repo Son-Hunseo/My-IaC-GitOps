@@ -1,0 +1,10 @@
+---
+# 모든 Kubernetes 노드에 containerd와 kubeadm 기반 Kubernetes 패키지를 설치합니다.
+- name: Install Kubernetes components
+  hosts: kube_control_plane:kube_workers
+  become: true
+  gather_facts: true
+  roles:
+    - role: containerd
+    - role: kubeadm
+

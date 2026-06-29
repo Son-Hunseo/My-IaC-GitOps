@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onprem-prometheus
+  namespace: argocd
+  annotations:
+    # observability는 operator 설치 이후 동기화합니다.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus
+      targetRevision: 25.27.0
+      helm:
+        releaseName: prometheus
+        valueFiles:
+          - $values/03-k8s-clusters/onprem/values/prometheus-values.yaml
+    - repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

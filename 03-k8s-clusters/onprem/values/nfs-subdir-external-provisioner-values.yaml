@@ -1,0 +1,8 @@
+nfs:
+  server: 192.168.0.3
+  path: /volume1/k8s-sc
+
+storageClass:
+  name: nas-sc
+  defaultClass: true
+  archiveOnDelete: true

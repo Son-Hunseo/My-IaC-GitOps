@@ -1,0 +1,15 @@
+# AWS EKS에서는 prometheus-server를 ClusterIP로 두고 Internal Gateway HTTPRoute로 노출합니다.
+server:
+  service:
+    type: ClusterIP
+    servicePort: 80
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+
+kube-state-metrics:
+  enabled: true
+prometheus-node-exporter:
+  enabled: true
+prometheus-pushgateway:
+  enabled: false

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: github-actions-runner-scale-sets
+description: Argo CD Application generator for on-premise GitHub Actions runner scale sets.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

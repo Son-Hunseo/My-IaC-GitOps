@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal
+  namespace: platform-gateway
+  annotations:
+    # ALB 상세 설정은 같은 네임스페이스의 LoadBalancerConfiguration에서 관리합니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  gatewayClassName: alb
+  infrastructure:
+    parametersRef:
+      group: gateway.k8s.aws
+      kind: LoadBalancerConfiguration
+      name: internal-alb
+  listeners:
+    - name: http
+      hostname: "*.aws.arpa"
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          # 내부 플랫폼 UI route가 각자 네임스페이스에서 Gateway를 참조할 수 있도록 허용합니다.
+          from: All

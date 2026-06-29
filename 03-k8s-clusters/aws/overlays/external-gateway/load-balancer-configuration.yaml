@@ -1,0 +1,32 @@
+apiVersion: gateway.k8s.aws/v1beta1
+kind: TargetGroupConfiguration
+metadata:
+  name: external-default-targets
+  namespace: platform-gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  defaultConfiguration:
+    targetType: ip
+---
+apiVersion: gateway.k8s.aws/v1beta1
+kind: LoadBalancerConfiguration
+metadata:
+  name: external-alb
+  namespace: platform-gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  scheme: internet-facing
+  ipAddressType: ipv4
+  sourceRanges:
+    - 0.0.0.0/0
+  listenerConfigurations:
+    - protocolPort: HTTPS:443
+      defaultCertificate: arn:aws:acm:ap-northeast-2:211125633965:certificate/d7def4ba-cc28-4275-b5a7-4ccb70566b79
+  defaultTargetGroupConfiguration:
+    name: external-default-targets
+  tags:
+    managed-by: argocd
+    platform: gitaiops
+    gateway: external

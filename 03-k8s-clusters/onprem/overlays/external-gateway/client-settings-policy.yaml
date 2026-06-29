@@ -1,0 +1,15 @@
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: unlimited-upload
+  namespace: nginx-gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: web-gateway
+  body:
+    maxSize: "0"
+    timeout: "10h"

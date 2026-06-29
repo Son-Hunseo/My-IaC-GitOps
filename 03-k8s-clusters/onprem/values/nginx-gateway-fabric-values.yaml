@@ -1,0 +1,8 @@
+# Gateway API CRD는 apps/gateway-api-crds.yaml에서 chart보다 먼저 설치합니다.
+nginxGateway:
+  name: nginx-gateway
+
+# Gateway가 생성하는 NGINX data plane Service는 On-Premise MetalLB IP를 받을 수 있도록 LoadBalancer로 둡니다.
+nginx:
+  service:
+    type: LoadBalancer

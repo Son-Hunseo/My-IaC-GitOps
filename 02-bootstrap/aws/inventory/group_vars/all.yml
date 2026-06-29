@@ -1,0 +1,15 @@
+---
+# AWS EKS 대상에서 GitOps 도구 설치에 사용할 기본 변수입니다.
+
+# Argo CD를 설치할 네임스페이스입니다.
+argocd_namespace: argocd
+
+# Argo CD upstream install manifest 버전입니다.
+argocd_version: v2.14.9
+
+# 테스트용 Internal Gateway는 HTTP만 열기 때문에 Argo CD의 HTTPS 리다이렉트를 끕니다.
+argocd_server_insecure: true
+
+# kubectl이 사용할 kubeconfig와 컨텍스트입니다.
+argocd_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true) }}"
+argocd_kube_context: ""

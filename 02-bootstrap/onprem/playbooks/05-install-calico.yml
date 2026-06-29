@@ -1,0 +1,7 @@
+---
+- name: Install Calico CNI
+  hosts: kube_control_plane[0]
+  become: true
+  gather_facts: false
+  roles:
+    - role: calico

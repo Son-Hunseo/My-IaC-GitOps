@@ -1,0 +1,125 @@
+---
+# 디스크 확장 도구가 없는 최소 OS 이미지를 대비해 cloud-guest-utils를 설치합니다.
+- name: Install disk grow utilities
+  ansible.builtin.apt:
+    name:
+      - cloud-guest-utils
+      - lvm2
+      - xfsprogs
+    state: present
+    update_cache: true
+
+# 루트 마운트의 블록 디바이스를 확인합니다.
+- name: Detect root mount device
+  ansible.builtin.command: findmnt -n -o SOURCE /
+  register: root_mount_device
+  changed_when: false
+
+# 루트 디바이스의 부모 디스크를 확인합니다.
+- name: Detect parent disk for root filesystem
+  ansible.builtin.command: lsblk -no PKNAME {{ root_mount_device.stdout }}
+  register: root_parent_disk
+  changed_when: false
+  failed_when: false
+
+# 일반 파티션 기반 루트 파일시스템에서 growpart에 전달할 디스크와 파티션 번호를 계산합니다.
+- name: Set partition resize facts
+  ansible.builtin.set_fact:
+    root_partition_disk: "/dev/{{ root_parent_disk.stdout }}"
+    root_partition_number: "{{ root_mount_device.stdout | regex_search('[0-9]+$') }}"
+  when:
+    - root_parent_disk.stdout | length > 0
+    - root_mount_device.stdout is regex('.*[0-9]+$')
+
+# 이미 최대 크기인 경우 growpart는 NOCHANGE를 반환하므로 실패로 처리하지 않습니다.
+- name: Grow root partition when root is a plain partition
+  ansible.builtin.command: growpart {{ root_partition_disk }} {{ root_partition_number }}
+  register: growpart_result
+  changed_when: growpart_result.rc == 0 and 'NOCHANGE' not in growpart_result.stdout
+  failed_when:
+    - growpart_result.rc != 0
+    - "'NOCHANGE' not in (growpart_result.stdout | default(''))"
+  when:
+    - root_partition_disk is defined
+    - root_partition_number is defined
+
+# LVM 루트인지 확인하기 위해 logical volume 경로를 검사합니다.
+- name: Detect root filesystem type
+  ansible.builtin.command: findmnt -n -o FSTYPE /
+  register: root_filesystem_type
+  changed_when: false
+
+# LVM 물리 볼륨 목록을 확인합니다.
+- name: Detect LVM physical volumes
+  ansible.builtin.command: pvs --noheadings -o pv_name
+  register: lvm_physical_volumes
+  changed_when: false
+  failed_when: false
+
+# LVM PV가 파티션 위에 있으면 pvresize 전에 해당 파티션을 먼저 확장합니다.
+- name: Grow partitions that back LVM physical volumes
+  ansible.builtin.shell: |
+    set -o pipefail
+    pv_device="{{ item | trim }}"
+    parent_disk="$(lsblk -no PKNAME "${pv_device}" | head -n 1)"
+    partition_number="$(echo "${pv_device}" | grep -oE '[0-9]+$')"
+
+    if [ -z "${parent_disk}" ] || [ -z "${partition_number}" ]; then
+      echo "SKIP non-partition physical volume ${pv_device}"
+      exit 0
+    fi
+
+    growpart "/dev/${parent_disk}" "${partition_number}"
+  args:
+    executable: /bin/bash
+  loop: "{{ lvm_physical_volumes.stdout_lines | default([]) }}"
+  register: lvm_growpart_result
+  changed_when:
+    - lvm_growpart_result.rc == 0
+    - "'NOCHANGE' not in (lvm_growpart_result.stdout | default(''))"
+    - "'SKIP' not in (lvm_growpart_result.stdout | default(''))"
+  failed_when:
+    - lvm_growpart_result.rc != 0
+    - "'NOCHANGE' not in (lvm_growpart_result.stdout | default(''))"
+  when:
+    - lvm_physical_volumes.rc | default(1) == 0
+    - item | trim | length > 0
+
+# LVM 기반 루트 볼륨이면 물리 볼륨 크기를 갱신합니다.
+- name: Resize LVM physical volumes
+  ansible.builtin.command: pvresize {{ item | trim }}
+  loop: "{{ lvm_physical_volumes.stdout_lines | default([]) }}"
+  register: pvresize_result
+  changed_when: "'changed' in (pvresize_result.stdout | default('') | lower) or 'resized' in (pvresize_result.stdout | default('') | lower)"
+  when:
+    - lvm_physical_volumes.rc | default(1) == 0
+    - item | trim | length > 0
+
+# 루트가 logical volume이면 남은 free extent를 모두 루트 파일시스템까지 확장합니다.
+- name: Extend root logical volume to all free space
+  ansible.builtin.command: lvextend -r -l +100%FREE {{ root_mount_device.stdout }}
+  register: lvextend_result
+  changed_when: "'successfully resized' in (lvextend_result.stdout | lower)"
+  failed_when:
+    - lvextend_result.rc != 0
+    - "'matches existing size' not in (lvextend_result.stderr | default('') | lower)"
+    - "'new size given' not in (lvextend_result.stderr | default('') | lower)"
+  when: root_mount_device.stdout is search('/dev/mapper/')
+
+# 일반 ext 계열 파일시스템을 온라인 확장합니다.
+- name: Resize ext root filesystem
+  ansible.builtin.command: resize2fs {{ root_mount_device.stdout }}
+  register: resize2fs_result
+  changed_when: "'Nothing to do' not in (resize2fs_result.stdout | default(''))"
+  when:
+    - root_mount_device.stdout is not search('/dev/mapper/')
+    - root_filesystem_type.stdout in ['ext2', 'ext3', 'ext4']
+
+# 일반 XFS 파일시스템을 온라인 확장합니다.
+- name: Resize xfs root filesystem
+  ansible.builtin.command: xfs_growfs /
+  register: xfs_growfs_result
+  changed_when: "'data blocks changed' in (xfs_growfs_result.stdout | default(''))"
+  when:
+    - root_mount_device.stdout is not search('/dev/mapper/')
+    - root_filesystem_type.stdout == 'xfs'

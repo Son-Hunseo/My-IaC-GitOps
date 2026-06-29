@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onprem-cert-manager
+  namespace: argocd
+  annotations:
+    # cert-manager CRD가 다른 인증서 리소스보다 먼저 준비되어야 합니다.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.15.3
+      helm:
+        valueFiles:
+          - $values/03-k8s-clusters/onprem/values/cert-manager-values.yaml
+    - repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

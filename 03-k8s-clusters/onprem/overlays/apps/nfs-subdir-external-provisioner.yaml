@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onprem-nfs-subdir-external-provisioner
+  namespace: argocd
+  annotations:
+    # Vault PVC uses nas-sc, so the provisioner must be ready before Vault starts.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+      chart: nfs-subdir-external-provisioner
+      targetRevision: 4.0.18
+      helm:
+        releaseName: nfs-subdir-external-provisioner
+        valueFiles:
+          - $values/03-k8s-clusters/onprem/values/nfs-subdir-external-provisioner-values.yaml
+    - repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nfs-provisioner
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

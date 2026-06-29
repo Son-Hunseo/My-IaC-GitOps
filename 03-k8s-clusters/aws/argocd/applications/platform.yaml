@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-platform
+  namespace: argocd
+  annotations:
+    # 이 root Application은 AWS EKS overlay 전체를 동기화합니다.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+    targetRevision: main
+    path: 03-k8s-clusters/aws/overlays
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      # AWS Load Balancer Controller와 External Secrets CRD가 준비되기 전 dry-run 실패를 방지합니다.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

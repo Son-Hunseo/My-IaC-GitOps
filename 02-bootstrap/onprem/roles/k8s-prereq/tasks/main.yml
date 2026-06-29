@@ -1,0 +1,56 @@
+---
+# Kubernetes 설치와 저장소 등록에 필요한 공통 패키지를 설치합니다.
+- name: Install common prerequisite packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: true
+
+# kubelet은 swap이 켜진 상태에서 기본적으로 시작하지 않으므로 즉시 비활성화합니다.
+- name: Disable swap immediately
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+  when: ansible_swaptotal_mb | int > 0
+
+# 재부팅 후에도 swap이 다시 켜지지 않도록 fstab 항목을 주석 처리합니다.
+- name: Disable swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(?!#)(\S+\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+
+# containerd overlay snapshotter와 Kubernetes bridge 트래픽 처리를 위한 모듈 설정 파일입니다.
+- name: Persist Kubernetes kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Kubernetes 네트워크와 containerd overlay snapshotter에 필요한 커널 모듈입니다.
+      overlay
+      br_netfilter
+
+# 현재 부팅 세션에 필요한 커널 모듈을 즉시 로드합니다.
+- name: Load Kubernetes kernel modules
+  ansible.builtin.command: modprobe {{ item }}
+  changed_when: false
+  loop: "{{ kubernetes_kernel_modules }}"
+
+# Kubernetes 네트워킹에 필요한 sysctl 값을 영구 설정 파일로 저장합니다.
+- name: Persist Kubernetes sysctl settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Kubernetes Pod 네트워크와 Service 라우팅에 필요한 커널 네트워크 설정입니다.
+      {% for key, value in kubernetes_sysctl_settings.items() %}
+      {{ key }} = {{ value }}
+      {% endfor %}
+
+# sysctl 설정을 현재 커널에 반영합니다.
+- name: Apply Kubernetes sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: false

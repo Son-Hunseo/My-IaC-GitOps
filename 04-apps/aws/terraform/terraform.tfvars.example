@@ -1,0 +1,48 @@
+# 한국어 주석: 실제 secret 값은 ignore되는 terraform.tfvars에만 넣으십시오.
+
+aws_region = "ap-northeast-2"
+
+default_tags = {
+  Project = "My-GitAIOps"
+  Layer   = "apps"
+}
+
+# AWS 계정에 token.actions.githubusercontent.com OIDC provider가 없으면 true로 둡니다.
+# 이미 같은 AWS 계정에 provider가 있으면 false로 바꾸십시오.
+create_github_oidc_provider = true
+github_oidc_thumbprints = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+apps = {
+  example = {
+    github_owner       = "sonhunseo"
+    github_repo        = "example"
+    github_branch      = "main"
+    ecr_push_role_name = "github-actions-ecr-push-example"
+
+    ecr_repositories = {
+      api = {
+        name = "example-api"
+      }
+      worker = {
+        name = "example-worker"
+      }
+    }
+
+    secrets = {
+      app = {
+        name = "apps/example/app"
+        values = {
+          DATABASE_URL  = "postgres://user:password@postgres.example.svc:5432/example"
+          SESSION_SECRET = "replace-me"
+        }
+      }
+      oauth = {
+        name = "apps/example/oauth"
+        values = {
+          OAUTH_CLIENT_ID     = "replace-me"
+          OAUTH_CLIENT_SECRET = "replace-me"
+        }
+      }
+    }
+  }
+}

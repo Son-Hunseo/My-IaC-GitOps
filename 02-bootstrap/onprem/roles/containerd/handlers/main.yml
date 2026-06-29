@@ -1,0 +1,7 @@
+---
+# 설정 변경 후 containerd를 재시작해 kubelet이 새 CRI 설정을 사용하도록 합니다.
+- name: Restart containerd
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+

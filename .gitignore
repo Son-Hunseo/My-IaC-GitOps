@@ -1,0 +1,80 @@
+# JetBrains IDEs (IntelliJ IDEA, GoLand, PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+.cache/
+.tmp/
+tmp/
+temp/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Kubernetes local files
+.kube/
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+*.local.yaml
+*.local.yml
+
+# Terraform / OpenTofu
+.terraform/
+.terraform.lock.hcl.bak
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.tfvars.json
+!.auto.tfvars.example
+!.tfvars.example
+
+# Terragrunt
+.terragrunt-cache/
+
+# Pulumi
+.pulumi/
+
+# Helm
+*.tgz
+
+# Ansible
+*.retry
+vault-password*
+
+# Generated plans and local IaC outputs
+*.plan
+*.tfplan
+plan.out
+terraform.tfstate.backup

@@ -1,0 +1,24 @@
+---
+# Argo CD를 설치할 네임스페이스입니다.
+argocd_namespace: argocd
+
+# 설치할 Argo CD 버전입니다.
+argocd_version: v2.14.9
+
+# Argo CD 공식 install manifest URL입니다.
+argocd_manifest_url: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
+
+# kubectl 명령이 사용할 kubeconfig 경로입니다.
+argocd_kubeconfig: /etc/kubernetes/admin.conf
+
+# kubeconfig 안의 특정 컨텍스트를 사용할 때 지정합니다. 빈 값이면 기본 컨텍스트를 사용합니다.
+argocd_kube_context: ""
+
+# rollout 대기 시간입니다.
+argocd_rollout_timeout: 300s
+
+# 테스트용 HTTP Gateway 뒤에서 Argo CD가 HTTPS로 리다이렉트하지 않도록 설정할지 여부입니다.
+argocd_server_insecure: false
+
+# 컨텍스트 지정 여부에 따라 kubectl 기본 명령을 구성합니다.
+argocd_kubectl_base_command: "kubectl{% if argocd_kube_context | length > 0 %} --context {{ argocd_kube_context }}{% endif %}"

@@ -1,0 +1,17 @@
+# On-Premise에서는 prometheus-server를 ClusterIP로 두고 Internal Gateway HTTPRoute로 노출합니다.
+server:
+  service:
+    type: ClusterIP
+    servicePort: 80
+  persistentVolume:
+    enabled: true
+    storageClass: nas-sc
+    size: 20Gi
+
+# kube-state-metrics와 node-exporter는 기본값으로 활성화해 클러스터 기본 지표를 수집합니다.
+kube-state-metrics:
+  enabled: true
+prometheus-node-exporter:
+  enabled: true
+prometheus-pushgateway:
+  enabled: false

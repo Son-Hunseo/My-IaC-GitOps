@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller-gateway-crds
+  namespace: argocd
+  annotations:
+    # ALB Gateway API가 참조하는 AWS 전용 Gateway CRD를 controller 설치 전에 적용합니다.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/kubernetes-sigs/aws-load-balancer-controller.git
+    targetRevision: v3.4.0
+    path: config/crd/gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

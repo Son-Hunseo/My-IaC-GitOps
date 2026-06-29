@@ -1,0 +1,9 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: alb
+  annotations:
+    # AWS Load Balancer Controller가 Gateway API 리소스를 조정하도록 지정합니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  controllerName: gateway.k8s.aws/alb

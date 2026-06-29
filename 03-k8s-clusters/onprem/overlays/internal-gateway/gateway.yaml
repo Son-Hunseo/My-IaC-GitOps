@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal
+  namespace: nginx-gateway
+  annotations:
+    # NGINX Gateway Fabric과 MetalLB가 준비된 뒤 Internal Gateway를 생성합니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  gatewayClassName: nginx
+  listeners:
+    - name: https
+      hostname: "*.onprem.arpa"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: onprem-internal-tls
+      allowedRoutes:
+        namespaces:
+          # 내부 플랫폼 UI가 각자 네임스페이스에서 HTTPRoute를 소유할 수 있도록 허용합니다.
+          from: All

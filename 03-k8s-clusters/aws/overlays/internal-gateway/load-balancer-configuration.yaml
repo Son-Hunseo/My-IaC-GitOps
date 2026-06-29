@@ -1,0 +1,31 @@
+apiVersion: gateway.k8s.aws/v1beta1
+kind: TargetGroupConfiguration
+metadata:
+  name: internal-default-targets
+  namespace: platform-gateway
+  annotations:
+    # ClusterIP Service 뒤의 Pod IP를 ALB target으로 등록하기 위한 기본 target group 정책입니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  defaultConfiguration:
+    targetType: ip
+---
+apiVersion: gateway.k8s.aws/v1beta1
+kind: LoadBalancerConfiguration
+metadata:
+  name: internal-alb
+  namespace: platform-gateway
+  annotations:
+    # Internal Gateway가 생성하는 ALB의 scheme, source range, tag를 중앙에서 관리합니다.
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  scheme: internet-facing
+  ipAddressType: ipv4
+  sourceRanges:
+    - 121.135.126.83/32
+  defaultTargetGroupConfiguration:
+    name: internal-default-targets
+  tags:
+    managed-by: argocd
+    platform: gitaiops
+    gateway: internal

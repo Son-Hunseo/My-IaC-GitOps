@@ -1,0 +1,29 @@
+---
+# 모든 Proxmox VM에 공통으로 적용되는 기본 변수입니다.
+
+# Kubernetes 패키지 저장소와 런타임 설치에 필요한 공통 패키지입니다.
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - conntrack
+  - curl
+  - gpg
+  - ipset
+  - lsb-release
+  - nfs-common
+  - socat
+  - software-properties-common
+
+# kubelet과 containerd가 정상 동작하도록 로드할 커널 모듈입니다.
+kubernetes_kernel_modules:
+  - overlay
+  - br_netfilter
+
+# Kubernetes 네트워킹에 필요한 sysctl 값입니다.
+kubernetes_sysctl_settings:
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+  net.ipv4.ip_forward: 1
+
+# VM 디스크 확장 역할에서 루트 파일시스템을 자동 확장할지 결정합니다.
+disk_extend_enabled: true

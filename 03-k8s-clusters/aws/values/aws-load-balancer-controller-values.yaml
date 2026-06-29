@@ -1,0 +1,15 @@
+# 실제 EKS 클러스터 이름으로 변경해야 합니다.
+clusterName: gitops-eks-dev
+
+# 실제 AWS region과 VPC ID로 변경해야 합니다.
+region: ap-northeast-2
+vpcId: vpc-042ec68ac05e46105
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    # IRSA role ARN은 인프라 단계에서 생성한 값을 사용합니다.
+    eks.amazonaws.com/role-arn: arn:aws:iam::211125633965:role/gitops-eks-dev-aws-lbc-role
+
+enableServiceMutatorWebhook: true

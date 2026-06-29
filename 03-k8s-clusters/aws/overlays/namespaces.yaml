@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  annotations:
+    # Prometheus와 Grafana를 함께 배치합니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  annotations:
+    # External Secrets Operator 설치 대상 네임스페이스입니다.
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-gateway
+  annotations:
+    # AWS Internal Gateway와 ALB Gateway API 리소스를 분리해서 관리합니다.
+    argocd.argoproj.io/sync-wave: "0"

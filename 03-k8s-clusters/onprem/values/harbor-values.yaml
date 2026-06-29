@@ -1,0 +1,44 @@
+# 실제 DNS 이름과 TLS 정책으로 변경해야 합니다.
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+
+externalURL: https://harbor.onprem.arpa
+
+existingSecretAdminPassword: harbor-secrets
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+existingSecretSecretKey: harbor-secrets
+
+core:
+  existingSecret: harbor-secrets
+  secretName: harbor-secrets
+  existingXsrfSecret: harbor-secrets
+
+jobservice:
+  existingSecret: harbor-secrets
+
+registry:
+  existingSecret: harbor-secrets
+  credentials:
+    existingSecret: harbor-secrets
+
+updateStrategy:
+  type: Recreate
+
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: nas-sc
+      size: 50Gi
+    database:
+      storageClass: nas-sc
+      size: 10Gi
+    redis:
+      storageClass: nas-sc
+      size: 5Gi
+    trivy:
+      storageClass: nas-sc
+      size: 10Gi

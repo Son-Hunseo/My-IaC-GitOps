@@ -199,6 +199,8 @@ vault.onprem.arpa   -> <internal-gateway-ip>
 grafana.onprem.arpa -> <internal-gateway-ip>
 ```
 
+> 트러블슈팅 : 혹시나 간헐적으로 ImagePullBackOff 가 뜬다면, `/etc/netplan/50-cloud-init.yaml` 을 확인하고 `nameserver` 항목에 내부 DNS외에 다른게 있다면, 지우고 `sudo netplan apply` 입력한다.
+
 우리는 CI 과정에서 Github Action Self-Hosted Runner를 사용한다.
 
 이때, 아마 CI 스크립트 과정 중 컨테이너 레지스트리에 push하는 스크립트가 있을텐데, Pod는 노드에 설정된 DNS 설정을 따르는 것이 아니라, `CoreDNS`를 DNS 서버로 따른다.

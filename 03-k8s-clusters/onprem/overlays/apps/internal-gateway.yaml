@@ -9,7 +9,7 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+    repoURL: https://github.com/Son-Hunseo/My-IaC-GitOps
     targetRevision: main
     path: 03-k8s-clusters/onprem/overlays/internal-gateway
   destination:

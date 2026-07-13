@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     # 이 프로젝트는 클러스터 플랫폼 구성요소만 관리합니다.
-    gitaiops.io/scope: cluster-platform
+    iac-gitops.io/scope: cluster-platform
 spec:
   description: Cluster platform add-ons and operators
   sourceRepos:

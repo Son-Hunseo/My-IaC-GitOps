@@ -3,7 +3,7 @@
 aws_region = "ap-northeast-2"
 
 default_tags = {
-  Project = "My-GitAIOps"
+  Project = "My-IaC-GitOps"
 }
 
 cluster_name    = "gitops-eks-dev"

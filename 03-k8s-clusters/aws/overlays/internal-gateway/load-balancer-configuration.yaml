@@ -27,5 +27,5 @@ spec:
     name: internal-default-targets
   tags:
     managed-by: argocd
-    platform: gitaiops
+    platform: iac-gitops
     gateway: internal

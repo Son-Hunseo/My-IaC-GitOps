@@ -16,7 +16,7 @@ spec:
         releaseName: grafana
         valueFiles:
           - $values/03-k8s-clusters/onprem/values/grafana-values.yaml
-    - repoURL: https://github.com/Son-Hunseo/My-GitAIOps
+    - repoURL: https://github.com/Son-Hunseo/My-IaC-GitOps
       targetRevision: main
       ref: values
   destination:

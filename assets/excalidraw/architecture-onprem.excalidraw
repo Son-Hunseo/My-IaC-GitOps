@@ -29,15 +29,15 @@
       "updated": 1783424920605,
       "link": null,
       "locked": false,
-      "text": "My-GitAIOps — On-Premise (Proxmox) 아키텍처",
-      "rawText": "My-GitAIOps — On-Premise (Proxmox) 아키텍처",
+      "text": "My-IaC-GitOps — On-Premise (Proxmox) 아키텍처",
+      "rawText": "My-IaC-GitOps — On-Premise (Proxmox) 아키텍처",
       "fontSize": 24,
       "fontFamily": 1,
       "textAlign": "left",
       "verticalAlign": "top",
       "baseline": 20,
       "containerId": null,
-      "originalText": "My-GitAIOps — On-Premise (Proxmox) 아키텍처",
+      "originalText": "My-IaC-GitOps — On-Premise (Proxmox) 아키텍처",
       "lineHeight": 1.25
     },
     {

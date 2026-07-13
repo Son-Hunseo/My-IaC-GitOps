@@ -153,12 +153,12 @@ runnerAuth:
 runnerScaleSets:
   - name: my-runner1
     runnerScaleSetName: my-project1-runner
-    githubConfigUrl: https://github.com/Son-Hunseo/my-gitaiops
+    githubConfigUrl: https://github.com/Son-Hunseo/my-iac-gitops
     minRunners: 0
     maxRunners: 3
   - name: my-runner2
     runnerScaleSetName: my-project2-runner
-    githubConfigUrl: https://github.com/Son-Hunseo/my-gitaiops2
+    githubConfigUrl: https://github.com/Son-Hunseo/my-iac-gitops2
     minRunners: 0
     maxRunners: 3
 ```

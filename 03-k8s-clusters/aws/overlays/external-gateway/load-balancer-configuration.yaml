@@ -28,5 +28,5 @@ spec:
     name: external-default-targets
   tags:
     managed-by: argocd
-    platform: gitaiops
+    platform: iac-gitops
     gateway: external

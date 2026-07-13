@@ -81,7 +81,7 @@ aws_region = "ap-northeast-2"
 
 ```hcl
 default_tags = {
-  Project     = "My-GitAIOps"
+  Project     = "My-IaC-GitOps"
   Layer       = "apps"
 }
 ```

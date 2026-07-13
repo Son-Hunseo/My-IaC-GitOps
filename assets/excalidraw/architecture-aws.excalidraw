@@ -29,15 +29,15 @@
       "updated": 1783424668438,
       "link": null,
       "locked": false,
-      "text": "My-GitAIOps — AWS EKS 아키텍처",
-      "rawText": "My-GitAIOps — AWS EKS 아키텍처",
+      "text": "My-IaC-GitOps — AWS EKS 아키텍처",
+      "rawText": "My-IaC-GitOps — AWS EKS 아키텍처",
       "fontSize": 24,
       "fontFamily": 1,
       "textAlign": "left",
       "verticalAlign": "top",
       "baseline": 20,
       "containerId": null,
-      "originalText": "My-GitAIOps — AWS EKS 아키텍처",
+      "originalText": "My-IaC-GitOps — AWS EKS 아키텍처",
       "lineHeight": 1.25
     },
     {

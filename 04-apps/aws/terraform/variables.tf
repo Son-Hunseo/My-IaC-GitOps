@@ -10,7 +10,7 @@ variable "default_tags" {
   description = "Default tags applied to app AWS resources."
   type        = map(string)
   default = {
-    Project = "My-GitAIOps"
+    Project = "My-IaC-GitOps"
   }
 }
 

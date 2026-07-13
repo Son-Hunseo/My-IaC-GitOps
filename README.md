@@ -91,7 +91,7 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
 - 시크릿 값이 Git 저장소에 전혀 노출되지 않으며, GitOps로 추적되는 것은 "어떤 시크릿을 어디서 가져올지"에 대한 참조(ExternalSecret)뿐
 - 시크릿 로테이션 시 Vault/Secrets Manager 값만 갱신하면 되고 GitOps 리소스 변경이 필요 없음
-- 클러스터를 처음부터 재구성해도 Vault 초기화 → 시크릿 입력 절차만 거치면 나머지는 자동으로 회복됨
+- 시크릿 값 자체도 수동 입력이 아니라 `04-apps`의 `tfvars`에 작성해 Terraform으로 Vault/Secrets Manager에 프로비저닝하므로, 클러스터를 처음부터 재구성해도 Vault 초기화 → `terraform apply`만 거치면 나머지는 자동으로 회복됨
 
 ## 트러블슈팅 - 간헐적 ImagePullBackOff (내부 DNS 이원화)
 
@@ -112,6 +112,14 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 - containerd가 항상 내부 DNS로만 조회하므로 `harbor.onprem.arpa` 해석이 매번 성공
 - `netplan apply`는 재부팅 없이 즉시 반영되므로 무중단으로 조치 가능
 - 이후 재발하지 않아 온프레미스 클러스터의 이미지 pull 안정성 확보
+
+## 더 고민해봐야할 점
+
+1. **etcd에 남는 시크릿**: External Secrets로 Vault/Secrets Manager에서 주입받더라도 결국 Kubernetes Secret은 etcd에 base64로 인코딩된 형태(사실상 평문)로 저장됩니다. 클러스터에 누군가 침투한다면 그대로 탈취될 수 있으므로, etcd 저장 시점에 암호화되도록 외부 KMS와 연동(EKS는 KMS envelope encryption, 온프레미스는 KMS provider 플러그인)하고, 민감한 시크릿은 Vault/Secrets Manager의 내장 rotate 기능으로 주기적으로 교체해 유출 시 피해 범위를 줄이는 것이 좋을 것 같습니다.
+
+2. **Terraform state/tfvars에 남는 시크릿 평문**: 시크릿을 `tfvars`로 프로비저닝하면 Git에는 노출되지 않지만, 로컬의 `tfvars` 파일과 Terraform state에는 값이 평문으로 남습니다. 사실상 state 파일이 제2의 시크릿 저장소가 되는 셈이므로, state를 암호화·접근 제어되는 remote backend(예: S3 + KMS)로 이전하고 `tfvars`는 SOPS 등으로 암호화해 관리하는 방안을 고민하고 있습니다.
+
+3. **IaC가 재현하지 못하는 상태 데이터와 DR**: 인프라·플랫폼 구성은 IaC로, 시크릿은 Terraform 프로비저닝으로 재현할 수 있고, 온프레미스의 상태(stateful) 데이터는 클러스터 외부의 NAS(NFS, `archiveOnDelete`)에 남기 때문에 클러스터를 재구성해도 유실되지는 않습니다. 다만 아카이브된 데이터를 새 PVC에 다시 연결하는 과정은 수동이고, NAS 자체가 단일 장애점이라 NAS 레벨의 백업이 별도로 필요합니다. AWS 쪽은 gp3 StorageClass가 `reclaimPolicy: Delete`라 PVC 삭제 시 모니터링 데이터도 함께 사라지므로, EBS 스냅샷이나 `Retain` 정책 적용을 고민해야 합니다. 여기에 온프레미스 control plane이 master 1대라는 단일 장애점까지 포함해, 백업·복구 리허설과 control plane 다중화까지 갖춰야 "언제든 재현 가능한 클러스터"가 완성된다고 생각합니다.
 
 ## 사용 기술
 

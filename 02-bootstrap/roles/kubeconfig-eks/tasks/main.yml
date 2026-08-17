@@ -1,0 +1,60 @@
+---
+- name: Register the EKS context in the Ansible host kubeconfig
+  when: kubeconfig_eks_enabled | bool
+  block:
+    # 이름이나 리전이 비면 aws CLI가 애매한 오류를 내므로 먼저 걸러 냅니다.
+    - name: Check that the EKS cluster name and region are set
+      ansible.builtin.assert:
+        that:
+          - kubeconfig_eks_cluster_name | length > 0
+          - kubeconfig_eks_region | length > 0
+        fail_msg: >-
+          aws/inventory/group_vars/all/aws.yml 의 eks_cluster_name 과 eks_region 을 설정하세요.
+          kubeconfig 자동 설정이 필요 없다면 kubeconfig_eks_enabled 를 false로 두면 됩니다.
+
+    - name: Ensure the kubeconfig directory exists
+      ansible.builtin.file:
+        path: "{{ kubeconfig_eks_path | dirname }}"
+        state: directory
+        mode: "0700"
+
+    # `aws eks update-kubeconfig` 는 항상 current-context를 새 컨텍스트로 바꿉니다.
+    # 되돌릴 수 있도록 실행 전 값을 먼저 읽어 둡니다.
+    - name: Read the current context before updating the kubeconfig
+      ansible.builtin.command: >-
+        {{ kubeconfig_eks_kubectl_bin }}
+        --kubeconfig {{ kubeconfig_eks_path }}
+        config current-context
+      register: kubeconfig_eks_previous_context
+      changed_when: false
+      failed_when: false
+      when: not (kubeconfig_eks_set_current_context | bool)
+
+    # 이미 같은 값으로 등록되어 있어도 aws CLI가 파일을 다시 쓰기 때문에
+    # 출력 문구로 실제 변경 여부를 판단합니다.
+    - name: Update the kubeconfig with the EKS cluster context
+      ansible.builtin.command: >-
+        {{ kubeconfig_eks_aws_bin }} eks update-kubeconfig
+        --region {{ kubeconfig_eks_region }}
+        --name {{ kubeconfig_eks_cluster_name }}
+        --kubeconfig {{ kubeconfig_eks_path }}
+        {% if kubeconfig_eks_alias | length > 0 %}--alias {{ kubeconfig_eks_alias }}{% endif %}
+      register: kubeconfig_eks_update
+      changed_when: "'Added new context' in kubeconfig_eks_update.stdout"
+
+    - name: Restore the previous current context
+      ansible.builtin.command: >-
+        {{ kubeconfig_eks_kubectl_bin }}
+        --kubeconfig {{ kubeconfig_eks_path }}
+        config use-context {{ kubeconfig_eks_previous_context.stdout | trim }}
+      changed_when: true
+      when:
+        - not (kubeconfig_eks_set_current_context | bool)
+        - kubeconfig_eks_previous_context.rc | default(1) == 0
+        - (kubeconfig_eks_previous_context.stdout | default('') | trim) | length > 0
+
+    - name: Report the resulting kubeconfig
+      ansible.builtin.debug:
+        msg: >-
+          '{{ kubeconfig_eks_path }}' 에
+          '{{ kubeconfig_eks_alias | default(kubeconfig_eks_cluster_name, true) }}' 컨텍스트를 등록했습니다.

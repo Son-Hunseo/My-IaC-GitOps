@@ -1,0 +1,32 @@
+---
+# Ansible 실행 호스트의 kubeconfig에 EKS 컨텍스트를 등록하는 역할의 기본값입니다.
+# (AWS 전용)
+#
+# `aws eks update-kubeconfig` 는 기존 kubeconfig에 cluster/user/context를
+# 병합해 넣으므로, 이 역할만 실행해도 다른 컨텍스트가 사라지지 않습니다.
+# 이 역할을 먼저 실행해 두면 뒤따르는 add-on 역할들이 바로 kubectl을 쓸 수 있습니다.
+
+# false로 두면 kubeconfig를 건드리지 않고, 이미 준비된 kubeconfig를 그대로 사용합니다.
+kubeconfig_eks_enabled: true
+
+# 대상 EKS 클러스터 이름과 리전입니다. 01-infra/aws 의 terraform output과 같아야 합니다.
+kubeconfig_eks_cluster_name: ""
+kubeconfig_eks_region: ""
+
+# kubeconfig에 등록할 컨텍스트 이름입니다.
+# 비워 두면 aws CLI 기본값(cluster ARN)이 쓰이는데 길고 알아보기 어려워
+# 클러스터 이름을 그대로 별칭으로 씁니다.
+kubeconfig_eks_alias: "{{ kubeconfig_eks_cluster_name }}"
+
+# 기록할 kubeconfig 파일 경로입니다.
+# KUBECONFIG에 여러 경로가 들어 있으면 aws CLI가 어디에 쓸지 모호해지므로 첫 경로만 씁니다.
+kubeconfig_eks_path: "{{ (lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true)).split(':')[0] }}"
+
+# 등록 후 이 컨텍스트를 current-context로 지정할지 여부입니다.
+# `aws eks update-kubeconfig` 에는 current-context를 바꾸지 않는 옵션이 없어서,
+# false로 두면 실행 전 컨텍스트를 기억했다가 kubectl로 되돌립니다.
+kubeconfig_eks_set_current_context: true
+
+# 사용할 실행 파일입니다.
+kubeconfig_eks_aws_bin: aws
+kubeconfig_eks_kubectl_bin: kubectl

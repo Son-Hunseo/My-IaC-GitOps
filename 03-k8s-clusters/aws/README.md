@@ -1,7 +1,24 @@
 # AWS EKS Platform GitOps
 
 이 디렉터리는 이미 부트스트랩이 끝난 AWS EKS 클러스터의 플랫폼 구성요소를 Argo CD로 설치합니다.
-Argo CD 자체 설치는 `02-bootstrap/aws` 단계의 책임이며, 여기서는 Argo CD가 동기화할 클러스터 애드온과 운영 컴포넌트만 다룹니다.
+Argo CD 자체 설치는 `02-bootstrap/aws` 단계의 책임이며, 여기서는 Argo CD가 동기화할 운영 컴포넌트만 다룹니다.
+
+## 이 계층이 다루지 않는 것
+
+설치 후 사실상 손댈 일이 없는 플랫폼 기반 컴포넌트는 앞 계층이 설치합니다.
+
+| 컴포넌트 | 설치 위치 | 설정 파일 |
+| --- | --- | --- |
+| 표준 Gateway API CRDs (`gateway.networking.k8s.io`) | `02-bootstrap` (자체 role) | `02-bootstrap/aws/inventory/group_vars/all/aws.yml` |
+| metrics-server | `02-bootstrap` (자체 role) | 〃 |
+| Argo CD | `02-bootstrap` (자체 role) | 〃 |
+| AWS EBS CSI Driver | `01-infra` (terraform EKS 관리형 add-on) | `01-infra/aws/terraform/main.tf` |
+
+ALB 전용 Gateway CRD(`gateway.k8s.aws`)는 AWS Load Balancer Controller 버전과 함께 움직이므로
+`overlays/apps/aws-load-balancer-controller-gateway-crds.yaml` 로 계속 이 계층에서 관리합니다.
+
+`Gateway`, `HTTPRoute`, `LoadBalancerConfiguration` 처럼 **위 컴포넌트를 사용하는 리소스**도
+환경에 따라 자주 바뀌므로 계속 이 계층에 있습니다.
 
 중요: `kubectl apply -f 03-k8s-clusters/aws`로 한 번에 설치하지 않습니다.
 `argocd/projects/platform.yaml`과 root `Application`을 적용하고, root `Application`이 하위 platform component들을 동기화하게 만듭니다.
@@ -53,7 +70,6 @@ https://charts.external-secrets.io
 https://grafana.github.io/helm-charts
 https://prometheus-community.github.io/helm-charts
 https://github.com/kubernetes-sigs/aws-load-balancer-controller.git
-https://github.com/kubernetes-sigs/gateway-api.git
 ```
 
 먼저 현재 kubeconfig가 가리키는 EKS cluster name과 region을 확인합니다.

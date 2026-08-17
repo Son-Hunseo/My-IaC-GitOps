@@ -3,8 +3,9 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - storage
+  # 표준 Gateway API CRD와 metrics-server는 02-bootstrap이 설치하므로 여기에 없습니다.
+  # 아래 gateway CRD는 ALB 전용(gateway.k8s.aws)이라 계속 GitOps로 관리합니다.
   - apps/external-secrets.yaml
-  - apps/gateway-api-crds.yaml
   - apps/aws-load-balancer-controller-gateway-crds.yaml
   - apps/prometheus.yaml
   - apps/grafana.yaml

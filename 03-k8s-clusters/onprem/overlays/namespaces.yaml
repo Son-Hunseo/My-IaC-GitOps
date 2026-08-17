@@ -1,3 +1,5 @@
+# cert-manager와 metallb-system 네임스페이스는 여기에 없습니다.
+# 02-bootstrap의 kubespray add-on이 설치 매니페스트에서 직접 만듭니다.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -25,25 +27,9 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cert-manager
-  annotations:
-    # cert-manager CRD 설치 전에 네임스페이스를 먼저 만듭니다.
-    argocd.argoproj.io/sync-wave: "0"
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: external-secrets
   annotations:
     # External Secrets Operator 전용 네임스페이스입니다.
-    argocd.argoproj.io/sync-wave: "0"
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: metallb-system
-  annotations:
-    # MetalLB controller와 speaker가 사용하는 네임스페이스입니다.
     argocd.argoproj.io/sync-wave: "0"
 ---
 apiVersion: v1

@@ -1,0 +1,31 @@
+---
+# 지정한 metrics-server 버전의 공식 설치 manifest를 적용합니다.
+# manifest 안에 Namespace를 제외한 모든 리소스(APIService 포함)가 들어 있습니다.
+- name: Apply metrics-server install manifest
+  ansible.builtin.command: "{{ metrics_server_addon_kubectl_base_command }} apply -f {{ metrics_server_addon_manifest_url }}"
+  environment:
+    KUBECONFIG: "{{ metrics_server_addon_kubeconfig }}"
+  register: metrics_server_apply_result
+  changed_when: "'created' in metrics_server_apply_result.stdout or 'configured' in metrics_server_apply_result.stdout"
+
+# Deployment가 준비되어야 metrics.k8s.io APIService가 Available 상태가 됩니다.
+- name: Wait for metrics-server rollout
+  ansible.builtin.command: >-
+    {{ metrics_server_addon_kubectl_base_command }}
+    -n {{ metrics_server_addon_namespace }}
+    rollout status deployment/metrics-server
+    --timeout={{ metrics_server_addon_rollout_timeout }}
+  environment:
+    KUBECONFIG: "{{ metrics_server_addon_kubeconfig }}"
+  changed_when: false
+
+# `kubectl top` 이 실제로 동작하려면 APIService까지 Available 이어야 합니다.
+- name: Wait for the metrics.k8s.io APIService to become available
+  ansible.builtin.command: >-
+    {{ metrics_server_addon_kubectl_base_command }}
+    wait --for=condition=Available
+    --timeout={{ metrics_server_addon_rollout_timeout }}
+    apiservice/v1beta1.metrics.k8s.io
+  environment:
+    KUBECONFIG: "{{ metrics_server_addon_kubeconfig }}"
+  changed_when: false

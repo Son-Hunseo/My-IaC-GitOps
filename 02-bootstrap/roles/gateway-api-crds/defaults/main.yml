@@ -1,0 +1,45 @@
+---
+# Gateway API CRD add-on 역할의 기본값입니다.
+#
+# 이 역할은 EKS 전용입니다.
+# 온프렘은 kubespray 내장 add-on(`gateway_api_enabled: true`)이 담당합니다.
+#
+# 변수 이름에 gateway_api_addon_ 접두사를 쓰는 이유:
+# kubespray에도 gateway_api_version / gateway_api_channel / gateway_api_enabled
+# 변수가 있어 같은 이름을 쓰면 온프렘 인벤토리와 뒤섞일 수 있습니다.
+
+# 설치할 Gateway API 릴리스입니다.
+# AWS Load Balancer Controller v3.4.0 문서가 요구하는 버전과 맞춰야 합니다.
+# (03-k8s-clusters/aws 의 ALB Gateway 구성이 이 CRD를 사용합니다)
+gateway_api_addon_version: v1.5.0
+
+# standard 채널은 GA/beta로 승격된 리소스(GatewayClass, Gateway, HTTPRoute,
+# GRPCRoute, ReferenceGrant)만 포함합니다. TCPRoute 같은 실험 리소스가 필요하면
+# "experimental" 로 바꿉니다.
+gateway_api_addon_channel: standard
+
+# 공식 릴리스의 CRD 설치 manifest입니다.
+gateway_api_addon_manifest_url: "https://github.com/kubernetes-sigs/gateway-api/releases/download/{{ gateway_api_addon_version }}/{{ gateway_api_addon_channel }}-install.yaml"
+
+# Established 상태를 확인할 CRD 목록입니다. standard 채널 기준입니다.
+gateway_api_addon_expected_crds:
+  - gatewayclasses.gateway.networking.k8s.io
+  - gateways.gateway.networking.k8s.io
+  - httproutes.gateway.networking.k8s.io
+  - grpcroutes.gateway.networking.k8s.io
+  - referencegrants.gateway.networking.k8s.io
+
+# kubectl 명령이 사용할 kubeconfig 경로입니다.
+gateway_api_addon_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true) }}"
+
+# kubeconfig 안의 특정 컨텍스트를 사용할 때 지정합니다. 빈 값이면 기본 컨텍스트를 사용합니다.
+gateway_api_addon_kube_context: ""
+
+# 사용할 kubectl 실행 파일입니다.
+gateway_api_addon_kubectl_bin: kubectl
+
+# CRD Established 대기 시간입니다.
+gateway_api_addon_wait_timeout: 120s
+
+# 컨텍스트 지정 여부에 따라 kubectl 기본 명령을 구성합니다.
+gateway_api_addon_kubectl_base_command: "{{ gateway_api_addon_kubectl_bin }}{% if gateway_api_addon_kube_context | length > 0 %} --context {{ gateway_api_addon_kube_context }}{% endif %}"

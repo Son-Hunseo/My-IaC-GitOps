@@ -1,0 +1,38 @@
+---
+# metrics-server add-on 역할의 기본값입니다.
+#
+# 이 역할은 EKS 전용입니다.
+# 온프렘은 kubespray 내장 add-on(`metrics_server_enabled: true`)이 담당하므로
+# 이 역할을 실행하지 않습니다. kubespray의 add-on role은 control plane 노드에
+# SSH해서 kubectl을 실행하는 구조라 관리형 control plane인 EKS에는 쓸 수 없습니다.
+#
+# 변수 이름에 metrics_server_addon_ 접두사를 쓰는 이유:
+# kubespray에도 metrics_server_version / metrics_server_enabled 변수가 있어
+# 같은 이름을 쓰면 온프렘 인벤토리와 뒤섞일 수 있습니다.
+
+# metrics-server가 설치되는 네임스페이스입니다. 공식 manifest 고정값입니다.
+metrics_server_addon_namespace: kube-system
+
+# 설치할 metrics-server 버전입니다.
+# 온프렘 kubespray v2.31.0이 고정한 버전(0.8.1)과 맞춰 두 환경의 지표 동작을 동일하게 만듭니다.
+metrics_server_addon_version: v0.8.1
+
+# 공식 릴리스의 all-in-one 설치 manifest입니다.
+# EKS의 kubelet serving 인증서는 클러스터 CA가 서명하므로 이 manifest를 그대로 적용하면 됩니다.
+# (`--kubelet-insecure-tls` 가 필요 없습니다)
+metrics_server_addon_manifest_url: "https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_addon_version }}/components.yaml"
+
+# kubectl 명령이 사용할 kubeconfig 경로입니다.
+metrics_server_addon_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true) }}"
+
+# kubeconfig 안의 특정 컨텍스트를 사용할 때 지정합니다. 빈 값이면 기본 컨텍스트를 사용합니다.
+metrics_server_addon_kube_context: ""
+
+# 사용할 kubectl 실행 파일입니다.
+metrics_server_addon_kubectl_bin: kubectl
+
+# rollout 대기 시간입니다.
+metrics_server_addon_rollout_timeout: 300s
+
+# 컨텍스트 지정 여부에 따라 kubectl 기본 명령을 구성합니다.
+metrics_server_addon_kubectl_base_command: "{{ metrics_server_addon_kubectl_bin }}{% if metrics_server_addon_kube_context | length > 0 %} --context {{ metrics_server_addon_kube_context }}{% endif %}"

@@ -1,0 +1,26 @@
+---
+# Gateway API CRD를 적용합니다.
+#
+# `--server-side=true` 는 선택이 아니라 필수입니다.
+# Gateway API CRD는 하나하나가 매우 커서 client-side apply가 사용하는
+# last-applied-configuration 어노테이션이 262144바이트 제한을 넘습니다.
+- name: Apply Gateway API {{ gateway_api_addon_channel }} channel CRDs
+  ansible.builtin.command: >-
+    {{ gateway_api_addon_kubectl_base_command }}
+    apply --server-side=true -f {{ gateway_api_addon_manifest_url }}
+  environment:
+    KUBECONFIG: "{{ gateway_api_addon_kubeconfig }}"
+  register: gateway_api_apply_result
+  changed_when: "'created' in gateway_api_apply_result.stdout or 'configured' in gateway_api_apply_result.stdout"
+
+# CRD가 Established 되기 전에 Gateway 구현체가 올라오면 watch 등록에 실패합니다.
+- name: Wait for Gateway API CRDs to be established
+  ansible.builtin.command: >-
+    {{ gateway_api_addon_kubectl_base_command }}
+    wait --for=condition=Established
+    --timeout={{ gateway_api_addon_wait_timeout }}
+    crd/{{ item }}
+  environment:
+    KUBECONFIG: "{{ gateway_api_addon_kubeconfig }}"
+  loop: "{{ gateway_api_addon_expected_crds }}"
+  changed_when: false

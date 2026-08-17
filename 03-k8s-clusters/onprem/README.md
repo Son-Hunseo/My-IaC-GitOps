@@ -1,7 +1,26 @@
 # On-Premise Platform GitOps
 
 이 디렉터리는 이미 부트스트랩이 끝난 On-Premise Kubernetes 클러스터의 플랫폼 구성요소를 Argo CD로 설치합니다.
-Argo CD 자체 설치는 `02-bootstrap/onprem` 단계의 책임이며, 여기서는 Argo CD가 동기화할 클러스터 애드온과 운영 컴포넌트만 다룹니다.
+Argo CD 자체 설치는 `02-bootstrap/onprem` 단계의 책임이며, 여기서는 Argo CD가 동기화할 운영 컴포넌트만 다룹니다.
+
+## 이 계층이 다루지 않는 것
+
+설치 후 사실상 손댈 일이 없는 플랫폼 기반 컴포넌트는 `02-bootstrap`이 kubespray 내장 add-on으로 설치합니다.
+GitOps로 관리해도 diff가 생기지 않아 여기서 내렸습니다.
+
+| 컴포넌트 | 설치 위치 | 설정 파일 |
+| --- | --- | --- |
+| Gateway API CRDs | `02-bootstrap` (kubespray) | `02-bootstrap/onprem/inventory/group_vars/all/onprem.yml` |
+| cert-manager | `02-bootstrap` (kubespray) | 〃 |
+| metrics-server | `02-bootstrap` (kubespray) | 〃 |
+| MetalLB (주소 풀 포함) | `02-bootstrap` (kubespray) | 〃 |
+| Argo CD | `02-bootstrap` (자체 role) | 〃 |
+
+`cert-manager`, `metallb-system` 네임스페이스도 kubespray 매니페스트가 직접 만들기 때문에
+`overlays/namespaces.yaml` 에 없습니다.
+
+`ClusterIssuer`, `Certificate`, `Gateway`, `HTTPRoute` 처럼 **위 컴포넌트를 사용하는 리소스**는
+환경에 따라 자주 바뀌므로 계속 이 계층에 있습니다.
 
 중요: `kubectl apply -f 03-k8s-clusters/onprem`로 한 번에 설치하지 않습니다.
 `argocd/projects/platform.yaml`과 root `Application`을 적용하고, root `Application`이 하위 platform component들을 동기화하게 만듭니다.
@@ -24,11 +43,9 @@ kubectl -n argocd get pods
 
 ## 사전 설정
 
-MetalLB address pool을 실제 노드 네트워크에서 사용 가능한 IP 대역으로 바꿉니다.
-
-```text
-03-k8s-clusters/onprem/overlays/metallb/metallb-address-pool.yaml
-```
+> MetalLB address pool은 이제 이 계층이 아니라 `02-bootstrap` 에서 설정합니다.
+> `02-bootstrap/onprem/inventory/group_vars/all/onprem.yml` 의 `metallb_config.address_pools`
+> 를 실제 노드 네트워크에서 사용 가능한 IP 대역으로 바꿉니다.
 
 다음 파일을 수정하여 실제 NAS GUI 대시보드 경로로 바꿔줍니다.
 
@@ -75,6 +92,7 @@ Internal Gateway는 내부 플랫폼 UI를 `*.onprem.arpa` wildcard 인증서로
 Argo CD, Harbor, Vault, Prometheus, Grafana의 `HTTPRoute`는 Gateway의 `https` listener에 연결됩니다.
 
 인증서는 cert-manager가 자체 서명 root CA와 내부 wildcard leaf 인증서를 생성하는 방식입니다.
+cert-manager 자체는 `02-bootstrap`이 설치하고, 여기서는 `Issuer` / `Certificate` / `ClusterIssuer` 만 다룹니다.
 
 아래 파일들은 위에 설명한 부분 관련 파일입니다.
 

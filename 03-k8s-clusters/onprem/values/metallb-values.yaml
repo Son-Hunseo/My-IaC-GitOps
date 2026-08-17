@@ -1,5 +1,0 @@
-# MetalLB는 L2 모드 address pool을 overlay 리소스로 별도 관리합니다.
-controller:
-  enabled: true
-speaker:
-  enabled: true

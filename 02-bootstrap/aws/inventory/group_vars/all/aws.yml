@@ -2,13 +2,73 @@
 # =============================================================================
 # AWS EKS 환경의 단일 오버라이드 파일입니다.
 #
-# EKS는 관리형 control plane이라 클러스터 설치(kubespray) 단계가 없고,
-# Argo CD add-on만 설치합니다. 온프렘과 동일한 add-on 역할(roles/argocd)과
-# 동일한 변수 이름(argocd_addon_*)을 사용해 두 환경의 절차를 일치시킵니다.
+# EKS는 관리형 control plane이라 클러스터 설치(kubespray) 단계가 없습니다.
+# 그리고 kubespray의 내장 add-on도 쓸 수 없습니다. kubespray의 add-on role은
+# 전부 kube_control_plane 노드에 SSH해서 kubectl을 실행하는 구조인데, EKS에는
+# 그런 노드가 없기 때문입니다.
+#
+# 그래서 온프렘이 kubespray 내장 add-on으로 얻는 것들을 여기서는
+# 02-bootstrap/roles/ 의 자체 role로 설치하고, 변수 이름과 절차는 최대한
+# 온프렘과 맞춰 두 환경을 같은 방식으로 다룹니다.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Argo CD add-on
+# 클러스터 접속 정보
+# -----------------------------------------------------------------------------
+
+# 01-infra/aws terraform의 `cluster_name` output과 같아야 합니다.
+#   cd 01-infra/aws/terraform && terraform output -raw cluster_name
+eks_cluster_name: gitops-eks-dev
+
+# EKS 클러스터가 있는 리전입니다. 01-infra/aws 의 terraform.tfvars 와 같아야 합니다.
+eks_region: ap-northeast-2
+
+# 아래 add-on role들이 사용할 kubeconfig 컨텍스트입니다.
+# kubeconfig-eks role이 `--alias` 로 이 이름의 컨텍스트를 만듭니다.
+eks_kube_context: "{{ eks_cluster_name }}"
+
+# kubeconfig 경로입니다. KUBECONFIG 환경 변수가 있으면 그 값을 씁니다.
+eks_kubeconfig: "{{ (lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true)).split(':')[0] }}"
+
+# -----------------------------------------------------------------------------
+# kubeconfig 자동 설정 (roles/kubeconfig-eks)
+# -----------------------------------------------------------------------------
+
+# `aws eks update-kubeconfig` 를 대신 실행해 실행 호스트에 컨텍스트를 등록합니다.
+# 이미 kubeconfig를 손으로 준비했다면 false로 두면 됩니다.
+kubeconfig_eks_enabled: true
+kubeconfig_eks_cluster_name: "{{ eks_cluster_name }}"
+kubeconfig_eks_region: "{{ eks_region }}"
+kubeconfig_eks_alias: "{{ eks_kube_context }}"
+kubeconfig_eks_path: "{{ eks_kubeconfig }}"
+
+# 등록한 EKS 컨텍스트를 current-context로 지정합니다.
+kubeconfig_eks_set_current_context: true
+
+# -----------------------------------------------------------------------------
+# Gateway API CRD (roles/gateway-api-crds)
+# -----------------------------------------------------------------------------
+
+# 03-k8s-clusters/aws 의 ALB Gateway 구성이 사용하는 표준 Gateway API CRD입니다.
+# AWS Load Balancer Controller v3.4.0 문서가 요구하는 버전으로 고정합니다.
+# (온프렘은 kubespray가 v1.5.1을 설치합니다. NGINX Gateway Fabric 2.6.3의 요구 버전입니다)
+gateway_api_addon_version: v1.5.0
+gateway_api_addon_channel: standard
+gateway_api_addon_kubeconfig: "{{ eks_kubeconfig }}"
+gateway_api_addon_kube_context: "{{ eks_kube_context }}"
+
+# -----------------------------------------------------------------------------
+# metrics-server (roles/metrics-server)
+# -----------------------------------------------------------------------------
+
+# `kubectl top` 과 HPA가 사용하는 리소스 지표 API입니다.
+# 온프렘 kubespray가 고정한 버전과 맞춥니다.
+metrics_server_addon_version: v0.8.1
+metrics_server_addon_kubeconfig: "{{ eks_kubeconfig }}"
+metrics_server_addon_kube_context: "{{ eks_kube_context }}"
+
+# -----------------------------------------------------------------------------
+# Argo CD (roles/argocd)
 # -----------------------------------------------------------------------------
 
 argocd_addon_namespace: argocd
@@ -17,10 +77,19 @@ argocd_addon_version: v2.14.9
 # 테스트용 Internal Gateway는 HTTP만 열기 때문에 Argo CD의 HTTPS 리다이렉트를 끕니다.
 argocd_addon_server_insecure: true
 
-# EKS는 실행 호스트의 kubeconfig로 접속합니다.
-# `aws eks update-kubeconfig --region <region> --name <cluster>` 를 먼저 실행하세요.
-argocd_addon_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true) }}"
+argocd_addon_kubeconfig: "{{ eks_kubeconfig }}"
+argocd_addon_kube_context: "{{ eks_kube_context }}"
 
-# 여러 클러스터가 있는 kubeconfig를 사용할 때 EKS 컨텍스트 이름을 명시하세요.
-# 비워두면 현재 kubeconfig의 기본 컨텍스트를 사용합니다.
-argocd_addon_kube_context: ""
+# -----------------------------------------------------------------------------
+# 여기서 다루지 않는 것
+# -----------------------------------------------------------------------------
+#
+# AWS EBS CSI Driver
+#   IRSA role ARN이 필요한 EKS 관리형 add-on이라 01-infra/aws 의 terraform이
+#   IAM role과 함께 설치합니다. (`aws_eks_addon.ebs_csi`)
+#   02-bootstrap으로 옮기면 role ARN을 terraform output에서 받아 넘겨야 하고,
+#   AWS가 해 주던 버전 관리를 직접 해야 해서 그대로 두었습니다.
+#
+# cert-manager / MetalLB
+#   cert-manager는 AWS overlay가 ACM 인증서를 쓰므로 필요 없고,
+#   MetalLB는 ALB/NLB가 있는 EKS에 해당하지 않습니다.

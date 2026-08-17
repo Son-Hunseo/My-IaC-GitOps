@@ -1,4 +1,5 @@
-# Gateway API CRD는 apps/gateway-api-crds.yaml에서 chart보다 먼저 설치합니다.
+# Gateway API CRD는 02-bootstrap의 kubespray add-on(`gateway_api_enabled: true`)이
+# 클러스터 설치 시점에 이미 넣어 둡니다. chart는 CRD를 만들지 않습니다.
 nginxGateway:
   name: nginx-gateway
 

@@ -17,7 +17,8 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 ### 인프라 계층 설계 (`01-infra` ~ `04-apps`)
 
 - `01-infra`: Terraform으로 온프레미스 Proxmox VM(Kubernetes 노드)과 AWS EKS(VPC/Subnet/NAT/EKS/NodeGroup/IRSA) 프로비저닝
-- `02-bootstrap`: Ansible로 클러스터 초기화 및 Argo CD 설치 (온프레미스는 kubespray로 Kubernetes, containerd, Calico 설치까지 포함)
+- `02-bootstrap`: Ansible로 클러스터 초기화, 기반 add-on, Argo CD 설치 (온프레미스는 kubespray로 Kubernetes, containerd, Calico 설치까지 포함)
+  - 설치 후 거의 바뀌지 않는 기반 add-on은 GitOps 대신 여기서 설치 — 온프레미스는 kubespray 내장 add-on(Gateway API CRD, cert-manager, metrics-server, MetalLB), AWS는 동일 역할의 자체 Ansible role(Gateway API CRD, metrics-server)
 - `03-k8s-clusters`: Argo CD App-of-Apps 패턴으로 플랫폼 컴포넌트(Gateway, 모니터링, 시크릿 관리, 레지스트리 등) GitOps 배포
 - `04-apps`: 앱별 Harbor/ECR repository, GitHub Actions 인증, Vault/Secrets Manager 시크릿을 Terraform으로 프로비저닝
 

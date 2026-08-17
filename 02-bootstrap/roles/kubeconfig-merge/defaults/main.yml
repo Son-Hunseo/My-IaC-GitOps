@@ -1,0 +1,28 @@
+---
+# kubespray가 내려준 kubeconfig를 Ansible 실행 호스트의 ~/.kube/config 에
+# 합쳐 주는 역할의 기본값입니다. (온프렘 전용)
+#
+# 이 역할의 모든 작업은 `delegate_to: localhost` 로 실행 호스트에서 동작합니다.
+# 플레이북이 control plane 노드를 대상으로 하더라도 파일은 실행 호스트에 씁니다.
+
+# false로 두면 kubeconfig를 건드리지 않습니다.
+kubeconfig_merge_enabled: true
+
+# 합칠 원본 kubeconfig입니다.
+# kubespray의 `kubeconfig_localhost: true` 가 만들어 주는 산출물 경로입니다.
+kubeconfig_merge_source: "{{ playbook_dir }}/onprem/inventory/artifacts/admin.conf"
+
+# 합쳐 넣을 대상 kubeconfig입니다.
+kubeconfig_merge_dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+# 합칠 때 사용할 컨텍스트 이름입니다.
+# kubespray가 만든 원본 컨텍스트 이름은 `kubernetes-admin@{{ cluster_name }}` 이라
+# 다른 클러스터와 구분이 되지 않으므로 여기서 알아보기 쉬운 이름으로 바꿉니다.
+kubeconfig_merge_context_name: onprem-admin
+
+# 합친 뒤 이 컨텍스트를 current-context로 지정할지 여부입니다.
+kubeconfig_merge_set_current_context: true
+
+# 실행 호스트에서 사용할 kubectl 실행 파일입니다.
+# 실행 호스트에 kubectl이 없으면 이 역할은 경고만 남기고 건너뜁니다.
+kubeconfig_merge_kubectl_bin: kubectl

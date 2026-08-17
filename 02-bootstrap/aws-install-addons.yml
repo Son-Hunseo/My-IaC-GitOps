@@ -1,0 +1,32 @@
+---
+# AWS EKS 클러스터에 02-bootstrap add-on을 설치합니다.
+#
+# EKS는 관리형 control plane이라 kubespray를 쓸 수 없습니다.
+# kubespray의 add-on role은 모두 kube_control_plane 노드에 SSH해서 kubectl을
+# 실행하는 구조인데, EKS에는 그런 노드가 없습니다. 그래서 온프렘이 kubespray
+# 내장 add-on으로 얻는 것들을 여기서는 자체 role로 설치합니다.
+#
+# AWS EBS CSI Driver는 여기 없습니다.
+# IRSA role ARN이 필요한 EKS 관리형 add-on이라 01-infra/aws 의 terraform
+# (`aws_eks_addon.ebs_csi`)이 IAM role과 함께 설치합니다.
+- name: Install 02-bootstrap add-ons on the AWS EKS cluster
+  hosts: eks_admin
+  become: false
+  gather_facts: false
+  roles:
+    # 뒤따르는 role들이 바로 kubectl을 쓸 수 있도록 kubeconfig부터 준비합니다.
+    - role: kubeconfig-eks
+      tags:
+        - kubeconfig
+
+    - role: gateway-api-crds
+      tags:
+        - gateway-api-crds
+
+    - role: metrics-server
+      tags:
+        - metrics-server
+
+    - role: argocd
+      tags:
+        - argocd

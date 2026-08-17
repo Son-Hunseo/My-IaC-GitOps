@@ -111,7 +111,7 @@ kubespray는 모든 기본값을 `roles/kubespray_defaults/defaults/main/` 에 �
 
 ## 사전 준비
 
-- 실행 호스트: macOS 또는 Linux(Ubuntu). Windows라면 **WSL 안에서** 실행합니다.
+- 실행 호스트: macOS 또는 Linux(Ubuntu). Windows라면 **WSL 안에서** 실행합니다. (추가적으로 프로젝트가 마운트 경로가 아니라 WLS 경로 안으로 이동시켜서 실행해야함)
 - 대상 VM에 SSH 접속이 가능하고, 접속 사용자가 `sudo` 권한을 가져야 합니다. (온프렘)
 - `git`, `python3`, `python3-venv` 가 설치되어 있어야 합니다.
 - `kubectl` 이 실행 호스트에 있어야 합니다. (kubeconfig 병합, AWS add-on 설치에 사용)

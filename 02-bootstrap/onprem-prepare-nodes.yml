@@ -1,0 +1,22 @@
+---
+# kubespray 실행 전에 kubespray가 다루지 않는 온프렘 고유 작업만 수행합니다.
+#
+# swap 비활성화, 커널 모듈, sysctl, containerd 설치는 모두 kubespray가 하므로
+# 여기서는 하지 않습니다.
+- name: Prepare Proxmox nodes before kubespray
+  hosts: k8s_cluster
+  become: true
+  gather_facts: true
+  roles:
+    # Proxmox에서 VM 디스크를 키운 뒤 루트 파티션/파일시스템을 확장합니다.
+    - role: disk-extend
+      when: disk_extend_enabled | default(false) | bool
+  post_tasks:
+    # kubespray가 설치하지 않지만 03-k8s-clusters 플랫폼에 필요한 패키지입니다.
+    # (nfs-common: NAS(NFS) PVC 마운트)
+    - name: Install additional OS packages required by platform workloads
+      ansible.builtin.apt:
+        name: "{{ onprem_additional_packages }}"
+        state: present
+        update_cache: true
+      when: onprem_additional_packages | default([]) | length > 0

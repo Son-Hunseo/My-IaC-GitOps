@@ -1,0 +1,37 @@
+---
+# 온프렘/EKS 공용 Argo CD add-on 역할의 기본값입니다.
+# 실제 값은 각 환경의 inventory/group_vars/all/*.yml 한 파일에서 덮어씁니다.
+#
+# 변수 이름에 argocd_addon_ 접두사를 쓰는 이유:
+# kubespray에도 argocd_version / argocd_namespace 변수가 있고,
+# argocd_version은 kubespray의 download checksum 조회에 사용되므로
+# 같은 이름을 쓰면 kubespray 실행이 깨질 수 있습니다.
+
+# Argo CD를 설치할 네임스페이스입니다.
+argocd_addon_namespace: argocd
+
+# 설치할 Argo CD 버전입니다.
+argocd_addon_version: v2.14.9
+
+# Argo CD 공식 install manifest URL입니다.
+argocd_addon_manifest_url: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_addon_version }}/manifests/install.yaml"
+
+# kubectl 명령이 사용할 kubeconfig 경로입니다.
+argocd_addon_kubeconfig: /etc/kubernetes/admin.conf
+
+# kubeconfig 안의 특정 컨텍스트를 사용할 때 지정합니다. 빈 값이면 기본 컨텍스트를 사용합니다.
+argocd_addon_kube_context: ""
+
+# 사용할 kubectl 실행 파일입니다.
+# kubespray는 kubectl을 bin_dir(/usr/local/bin)에 설치하므로 온프렘에서는
+# 절대 경로로 덮어써서 sudo secure_path에 의존하지 않게 합니다.
+argocd_addon_kubectl_bin: kubectl
+
+# rollout 대기 시간입니다.
+argocd_addon_rollout_timeout: 300s
+
+# 테스트용 HTTP Gateway 뒤에서 Argo CD가 HTTPS로 리다이렉트하지 않도록 설정할지 여부입니다.
+argocd_addon_server_insecure: false
+
+# 컨텍스트 지정 여부에 따라 kubectl 기본 명령을 구성합니다.
+argocd_addon_kubectl_base_command: "{{ argocd_addon_kubectl_bin }}{% if argocd_addon_kube_context | length > 0 %} --context {{ argocd_addon_kube_context }}{% endif %}"

@@ -1,0 +1,172 @@
+---
+# =============================================================================
+# On-Premise(Proxmox) 클러스터의 단일 오버라이드 파일입니다.
+#
+# kubespray는 모든 기본값을 `roles/kubespray_defaults/defaults/main/`에 가지고
+# 있으므로, sample inventory의 group_vars 계층을 통째로 복사해서 여기저기 값을
+# 바꾸지 않고 "바꿔야 하는 변수"만 이 파일 하나에 선언해 덮어씁니다.
+#
+# - 이 파일은 inventory/hosts.yml 옆의 group_vars/all/ 에 있으므로 kubespray가
+#   자동으로 읽습니다. inventory group_vars는 role defaults보다 우선하므로
+#   여기 선언한 값이 항상 이깁니다.
+# - 어떤 변수를 더 바꿀 수 있는지는 `02-bootstrap/kubespray-sample/`에 복사해 둔
+#   업스트림 sample group_vars를 참고하세요. (참조 전용이며 적용되지 않습니다)
+# - 이 파일은 kubespray 플레이북과 02-bootstrap 자체 add-on 플레이북이 모두
+#   읽습니다. 그래서 add-on 변수도 여기에 함께 선언합니다.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 클러스터 기본
+# -----------------------------------------------------------------------------
+
+# 설치할 Kubernetes 버전입니다. kubespray는 `v` 접두사 없이 patch 버전까지 받습니다.
+# kubespray v2.31.0이 checksum을 가지고 있는 버전만 사용할 수 있습니다. (1.33 ~ 1.35)
+kube_version: 1.34.7
+
+# 클러스터 DNS 도메인입니다. 03-k8s-clusters의 Service DNS가 이 값을 전제로 합니다.
+cluster_name: cluster.local
+
+# CRI는 containerd를 사용합니다. (kubeadm 시절 구성과 동일)
+container_manager: containerd
+
+# etcd는 control plane 노드에서 systemd 서비스로 실행합니다.
+# kubespray에서 가장 검증된 배포 방식이며, 노드를 늘릴 때 stacked etcd로 확장됩니다.
+etcd_deployment_type: host
+
+# -----------------------------------------------------------------------------
+# 네트워크 대역 (기존 kubeadm 구성 값을 그대로 유지)
+# -----------------------------------------------------------------------------
+
+# 기존 kubeadm-config.yml의 networking.serviceSubnet 값입니다.
+kube_service_addresses: 10.96.0.0/12
+
+# 기존 kubeadm-config.yml의 networking.podSubnet 값입니다.
+kube_pods_subnet: 10.244.0.0/16
+
+# 노드 1대에 할당할 Pod 서브넷 크기입니다. /16 Pod 대역 기준 최대 256노드입니다.
+kube_network_node_prefix: 24
+
+# API 서버 포트입니다. 기존 구성과 동일하게 6443을 사용합니다.
+kube_apiserver_port: 6443
+
+# -----------------------------------------------------------------------------
+# kube-proxy
+# -----------------------------------------------------------------------------
+
+# 기존 kubeadm 클러스터의 기본값과 동일하게 iptables 모드를 사용합니다.
+# (kubespray 기본값은 ipvs입니다)
+kube_proxy_mode: iptables
+
+# MetalLB L2 모드가 kube-ipvs0 인터페이스의 ARP 응답 때문에 깨지지 않도록 합니다.
+# iptables 모드에서는 필수가 아니지만, 나중에 ipvs로 바꿔도 03-k8s-clusters의
+# MetalLB가 그대로 동작하도록 미리 켜 둡니다.
+kube_proxy_strict_arp: true
+
+# -----------------------------------------------------------------------------
+# CNI (Calico) - 기존 tigera-operator Installation CR과 동일한 구성
+# -----------------------------------------------------------------------------
+
+kube_network_plugin: calico
+
+# 기존 Installation CR의 encapsulation: VXLAN 과 동일합니다.
+# vxlan 백엔드를 쓰면 BGP(bird)가 비활성화되어 홈랩 스위치 설정이 필요 없습니다.
+calico_network_backend: vxlan
+calico_vxlan_mode: Always
+calico_ipip_mode: Never
+
+# 기존 default-ipv4-ippool의 blockSize: 26 과 동일합니다.
+calico_pool_blocksize: 26
+
+# 기존 default-ipv4-ippool의 natOutgoing: Enabled 와 동일합니다.
+nat_outgoing: true
+
+# Kubernetes API를 datastore로 사용합니다. (기존 operator 설치와 동일)
+calico_datastore: kdd
+
+# 기존 05-install-calico.yml이 적용하던 `kind: APIServer` 커스텀 리소스에 해당합니다.
+# calicoctl 없이 kubectl로 NetworkPolicy/IPPool을 조회할 수 있습니다.
+calico_apiserver_enabled: true
+
+# -----------------------------------------------------------------------------
+# DNS
+# -----------------------------------------------------------------------------
+
+# Pod DNS 질의를 노드 로컬 캐시로 받습니다. (kubespray 기본값)
+enable_nodelocaldns: true
+
+# 노드의 /etc/resolv.conf를 kubespray가 관리하게 합니다.
+resolvconf_mode: host_resolvconf
+
+# 중요: 노드에 원래 설정되어 있던 nameserver를 그대로 물려받지 않습니다.
+# kubespray 기본값(false)이면 노드의 기존 /etc/resolv.conf를 읽어서 그대로 이어붙이는데,
+# cloud-init이 넣어 둔 값이 무엇이냐에 따라 노드마다 결과가 달라집니다.
+# 실제로 이 프로젝트에서 cloud-init이 넣은 1.1.1.1 때문에 containerd가
+# harbor.onprem.arpa를 NXDOMAIN으로 받아 간헐적 ImagePullBackOff가 발생했습니다.
+# (루트 README의 트러블슈팅 참고)
+disable_host_nameservers: true
+
+# 위에서 기존 값을 끊었으므로, 노드가 쓸 nameserver를 여기서 전부 명시합니다.
+# 최종 /etc/resolv.conf = [169.254.25.10(nodelocaldns)] + 아래 목록
+#
+# 01-infra/onprem 의 terraform.tfvars 에 있는 내부 DNS와 같은 값이어야 합니다.
+# 공인 DNS(1.1.1.1 등)를 여기에 추가하면 안 됩니다.
+# 내부 도메인(.onprem.arpa)을 모르는 서버가 랜덤하게 선택되어 위 문제가 재발합니다.
+# 외부 도메인은 내부 DNS가 상위로 포워딩합니다.
+nameservers:
+  - 192.168.10.1
+
+# CoreDNS와 NodeLocal DNS가 클러스터 외부 도메인을 물어볼 대상입니다.
+# 비워 두면 `/etc/resolv.conf`로 포워딩하는데, 그 파일 첫 줄이 nodelocaldns 자기 자신이라
+# 설정이 자기 참조가 됩니다. 명시해서 그런 모호함을 없앱니다.
+upstream_dns_servers:
+  - 192.168.10.1
+
+# -----------------------------------------------------------------------------
+# 로컬 아티팩트
+# -----------------------------------------------------------------------------
+
+# 설치 후 inventory/artifacts/admin.conf 로 kubeconfig를 내려받습니다.
+kubeconfig_localhost: true
+
+# kubeconfig의 server 주소를 control plane의 ansible_host로 씁니다.
+# 이렇게 해야 마스터 노드에 SSH하지 않고 바로 로컬 kubectl로 붙을 수 있습니다.
+kubeconfig_localhost_ansible_host: true
+
+# -----------------------------------------------------------------------------
+# kubespray 내장 add-on
+# -----------------------------------------------------------------------------
+
+# kubespray 내장 Argo CD add-on은 사용하지 않습니다.
+# server.insecure 설정과 rollout 대기가 필요하고, EKS 쪽과 동일한 절차를 쓰기
+# 위해 02-bootstrap/roles/argocd 를 별도 add-on 플레이북으로 실행합니다.
+argocd_enabled: false
+
+# 나머지 add-on(MetalLB, cert-manager, metrics-server 등)은 03-k8s-clusters의
+# Argo CD App-of-Apps가 담당하므로 kubespray에서는 모두 끕니다. (기본값 false)
+
+# -----------------------------------------------------------------------------
+# 02-bootstrap 자체 add-on 변수 (kubespray 변수가 아님)
+# -----------------------------------------------------------------------------
+
+# playbooks/prepare-nodes.yml: Proxmox에서 디스크를 키운 뒤 루트 파일시스템을 확장합니다.
+disk_extend_enabled: true
+
+# playbooks/prepare-nodes.yml: kubespray가 설치하지 않지만 플랫폼에 필요한 패키지입니다.
+# nfs-common은 NAS(NFS) PVC 마운트에 필요합니다.
+onprem_additional_packages:
+  - nfs-common
+
+# playbooks/install-argocd.yml: Argo CD add-on 설정입니다.
+# kubespray의 argocd_* 변수와 충돌하지 않도록 argocd_addon_* 접두사를 씁니다.
+argocd_addon_namespace: argocd
+argocd_addon_version: v2.14.9
+
+# 테스트용 Internal Gateway는 HTTP만 열기 때문에 Argo CD의 HTTPS 리다이렉트를 끕니다.
+argocd_addon_server_insecure: true
+
+# kubespray가 만든 control plane 관리자 kubeconfig를 그대로 사용합니다.
+argocd_addon_kubeconfig: /etc/kubernetes/admin.conf
+argocd_addon_kube_context: ""
+
+# kubespray는 kubectl을 bin_dir(/usr/local/bin)에 설치합니다.
+argocd_addon_kubectl_bin: /usr/local/bin/kubectl

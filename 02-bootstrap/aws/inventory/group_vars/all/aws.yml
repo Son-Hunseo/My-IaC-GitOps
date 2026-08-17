@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# AWS EKS 환경의 단일 오버라이드 파일입니다.
+#
+# EKS는 관리형 control plane이라 클러스터 설치(kubespray) 단계가 없고,
+# Argo CD add-on만 설치합니다. 온프렘과 동일한 add-on 역할(roles/argocd)과
+# 동일한 변수 이름(argocd_addon_*)을 사용해 두 환경의 절차를 일치시킵니다.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Argo CD add-on
+# -----------------------------------------------------------------------------
+
+argocd_addon_namespace: argocd
+argocd_addon_version: v2.14.9
+
+# 테스트용 Internal Gateway는 HTTP만 열기 때문에 Argo CD의 HTTPS 리다이렉트를 끕니다.
+argocd_addon_server_insecure: true
+
+# EKS는 실행 호스트의 kubeconfig로 접속합니다.
+# `aws eks update-kubeconfig --region <region> --name <cluster>` 를 먼저 실행하세요.
+argocd_addon_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(lookup('env', 'HOME') ~ '/.kube/config', true) }}"
+
+# 여러 클러스터가 있는 kubeconfig를 사용할 때 EKS 컨텍스트 이름을 명시하세요.
+# 비워두면 현재 kubeconfig의 기본 컨텍스트를 사용합니다.
+argocd_addon_kube_context: ""

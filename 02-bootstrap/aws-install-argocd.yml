@@ -1,0 +1,11 @@
+---
+# 이미 생성되어 접근 가능한 EKS 클러스터에 Argo CD add-on을 설치합니다.
+# 온프렘과 같은 roles/argocd 역할을 사용하며, 실행 위치만 로컬입니다.
+- name: Install Argo CD add-on on AWS EKS cluster
+  hosts: eks_admin
+  become: false
+  gather_facts: false
+  roles:
+    - role: argocd
+      tags:
+        - argocd

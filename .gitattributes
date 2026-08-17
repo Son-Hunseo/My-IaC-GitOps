@@ -1,0 +1,9 @@
+# 이 저장소의 자동화는 WSL/Linux/macOS에서 실행됩니다.
+# Windows에서 체크아웃하더라도 아래 파일들은 CRLF로 바뀌면 안 됩니다.
+# (셸 스크립트는 CRLF가 섞이면 `$'\r': command not found` 로 즉시 깨집니다)
+*.sh text eol=lf
+*.env text eol=lf
+*.cfg text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.j2 text eol=lf

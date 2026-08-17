@@ -6,7 +6,7 @@
 
 이에 홈랩(Proxmox)의 인프라 환경을 수분~수시간 안에 재현할 수 있는 IaC 프로젝트를 기획하게 되었습니다. 추가적으로, 하는 김에 AWS에도 동일한 플랫폼을 구현하는 것이 실력 향상과 경험 측면에서 도움이 될 것이라 생각하여 AWS EKS 환경도 함께 구축했습니다.
 
-인프라 프로비저닝, 클러스터 부트스트랩, 플랫폼 GitOps, 앱별 리소스를 4단계로 분리하여, 새 프로젝트를 배포할 때는 `04-apps`에 Harbor/ECR repository와 Secret 설정만 추가하면 바로 CI/CD와 GitOps 배포 파이프라인을 태울 수 있는 것을 목표로 했습니다. 온프레미스 kubeadm 클러스터와 AWS EKS를 동일한 GitOps 패턴(Argo CD App-of-Apps)으로 동시에 운영하고 있습니다.
+인프라 프로비저닝, 클러스터 부트스트랩, 플랫폼 GitOps, 앱별 리소스를 4단계로 분리하여, 새 프로젝트를 배포할 때는 `04-apps`에 Harbor/ECR repository와 Secret 설정만 추가하면 바로 CI/CD와 GitOps 배포 파이프라인을 태울 수 있는 것을 목표로 했습니다. 온프레미스 kubespray 클러스터와 AWS EKS를 동일한 GitOps 패턴(Argo CD App-of-Apps)으로 동시에 운영하고 있습니다.
 
 Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
@@ -16,8 +16,8 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
 ### 인프라 계층 설계 (`01-infra` ~ `04-apps`)
 
-- `01-infra`: Terraform으로 온프레미스 Proxmox VM(kubeadm 노드)과 AWS EKS(VPC/Subnet/NAT/EKS/NodeGroup/IRSA) 프로비저닝
-- `02-bootstrap`: Ansible로 클러스터 초기화 및 Argo CD 설치 (온프레미스는 kubeadm, containerd, Calico 설치까지 포함)
+- `01-infra`: Terraform으로 온프레미스 Proxmox VM(Kubernetes 노드)과 AWS EKS(VPC/Subnet/NAT/EKS/NodeGroup/IRSA) 프로비저닝
+- `02-bootstrap`: Ansible로 클러스터 초기화 및 Argo CD 설치 (온프레미스는 kubespray로 Kubernetes, containerd, Calico 설치까지 포함)
 - `03-k8s-clusters`: Argo CD App-of-Apps 패턴으로 플랫폼 컴포넌트(Gateway, 모니터링, 시크릿 관리, 레지스트리 등) GitOps 배포
 - `04-apps`: 앱별 Harbor/ECR repository, GitHub Actions 인증, Vault/Secrets Manager 시크릿을 Terraform으로 프로비저닝
 
@@ -36,7 +36,7 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
 ![On-Premise 아키텍처](assets/img/architecture-onprem.png)
 
-- Proxmox VE 위에 master 1대 / worker 2대 VM을 생성하고, kubeadm + Calico CNI로 클러스터 구성
+- Proxmox VE 위에 master 1대 / worker 2대 VM을 생성하고, kubespray(kubeadm 기반) + Calico CNI로 클러스터 구성
 - MetalLB가 LoadBalancer IP를 할당하고 Nginx Gateway Fabric이 내부(`*.onprem.arpa`)와 외부(`sonhs.com`) Gateway를 함께 서빙
 - 내부 인증서는 cert-manager 자체 서명 Root CA, 외부 인증서는 Let's Encrypt DNS-01(Route 53)로 발급
 - 시크릿(Route53 자격증명, Harbor 관리자 계정, GitHub PAT)은 Vault + External Secrets Operator로 주입하며 Git 저장소에는 값이 존재하지 않음
@@ -59,7 +59,7 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
 - 프로젝트마다 인프라를 처음부터 구성하면 반복 작업이 많고 설정 누락 위험이 큼
 - 인프라 프로비저닝(Terraform), 클러스터 초기화(Ansible), 플랫폼 배포(GitOps), 앱별 리소스가 한 곳에 뒤섞여 있으면 특정 계층만 재실행하거나 삭제하기 어려움
-- 온프레미스와 AWS는 프로비저닝 방식이 완전히 다르지만(Proxmox VM + kubeadm vs 관리형 EKS), 그 위의 플랫폼 구성은 최대한 동일한 패턴을 유지하고 싶었음
+- 온프레미스와 AWS는 프로비저닝 방식이 완전히 다르지만(Proxmox VM + kubespray vs 관리형 EKS), 그 위의 플랫폼 구성은 최대한 동일한 패턴을 유지하고 싶었음
 
 ### TO-BE
 
@@ -123,4 +123,4 @@ Github: https://github.com/Son-Hunseo/My-IaC-GitOps
 
 ## 사용 기술
 
-Terraform / Ansible / Kubernetes(kubeadm, EKS) / Argo CD (App-of-Apps) / Calico / MetalLB / Nginx Gateway Fabric(Gateway API) / Harbor / Vault / External Secrets Operator / cert-manager / Prometheus / Grafana / GitHub Actions (ARC self-hosted runner) / AWS(EKS, VPC, IAM/IRSA, Secrets Manager, ECR, ACM, Route 53)
+Terraform / Ansible / Kubernetes(kubespray, EKS) / Argo CD (App-of-Apps) / Calico / MetalLB / Nginx Gateway Fabric(Gateway API) / Harbor / Vault / External Secrets Operator / cert-manager / Prometheus / Grafana / GitHub Actions (ARC self-hosted runner) / AWS(EKS, VPC, IAM/IRSA, Secrets Manager, ECR, ACM, Route 53)

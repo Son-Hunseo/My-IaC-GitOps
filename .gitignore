@@ -73,6 +73,14 @@ override.tf.json
 *.retry
 vault-password*
 
+# kubespray (02-bootstrap)
+# 저장소 밖에 클론하는 것이 기본이지만, KUBESPRAY_DIR을 저장소 안으로 바꾼 경우를 대비합니다.
+02-bootstrap/**/kubespray/
+.kubespray/
+# kubespray가 만드는 로컬 산출물입니다. kubeconfig와 자격증명이 들어 있습니다.
+02-bootstrap/*/inventory/artifacts/
+02-bootstrap/*/inventory/credentials/
+
 # Generated plans and local IaC outputs
 *.plan
 *.tfplan
